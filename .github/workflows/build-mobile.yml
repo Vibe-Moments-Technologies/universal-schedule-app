@@ -276,9 +276,6 @@ jobs:
           SHA: ${{ needs.resolve.outputs.commit_sha }}
         run: python tools/update_version_feed.py --channel "$CHANNEL" --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" --out-dir dist_version
 
-      - name: 📋 Copy remote config
-        run: cp config.json dist_version/
-
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
