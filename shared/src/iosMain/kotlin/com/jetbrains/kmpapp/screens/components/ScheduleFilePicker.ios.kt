@@ -10,7 +10,6 @@ import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.create
-import platform.Foundation.stringByAppendingPathComponent
 import platform.Foundation.writeToFile
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
@@ -18,9 +17,9 @@ import platform.UIKit.UIDocumentPickerDelegateProtocol
 import platform.UIKit.UIDocumentPickerViewController
 import platform.UIKit.UIView
 import platform.UIKit.UIViewController
-import platform.UIKit.UIWindow
-import platform.UIKit.UIWindowScene
-import platform.UniformTypeIdentifiers.UTType
+import platform.UIKit.popoverPresentationController
+import platform.UniformTypeIdentifiers.UTTypeJSON
+import platform.UniformTypeIdentifiers.UTTypePlainText
 import platform.darwin.NSObject
 
 @Composable
@@ -33,20 +32,17 @@ actual fun rememberScheduleFilePicker(): ScheduleFilePicker {
     }
 }
 
-/** Корневой VC активного окна: из него показываем системные контроллеры. */
-private fun activeRootViewController(): UIViewController? {
-    val scenes = UIApplication.sharedApplication.connectedScenes.allObjects
-    val scene = scenes.filterIsInstance<UIWindowScene>().firstOrNull()
-    val windows = scene?.windows?.allObjects?.filterIsInstance<UIWindow>().orEmpty()
-    return (windows.firstOrNull { it.isKeyWindow } ?: windows.firstOrNull())?.rootViewController
-}
+/** Корневой VC ключевого окна: из него показываем системные контроллеры. */
+@Suppress("DEPRECATION")
+private fun activeRootViewController(): UIViewController? =
+    UIApplication.sharedApplication.keyWindow?.rootViewController
 
 @OptIn(ExperimentalForeignApi::class)
 private fun exportViaShareSheet(fileName: String, content: String) {
     val root = activeRootViewController() ?: return
     // Файл во временную директорию — share sheet сам предложит «Сохранить
     // в Файлы», AirDrop, почту и т.д.
-    val path = NSTemporaryDirectory().stringByAppendingPathComponent(fileName)
+    val path = NSTemporaryDirectory() + fileName
     val ok = NSString.create(string = content)
         .writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
     if (!ok) return
@@ -75,6 +71,7 @@ private class ImportDelegate(
     private val onResult: (String?) -> Unit
 ) : NSObject(), UIDocumentPickerDelegateProtocol {
 
+    @OptIn(ExperimentalForeignApi::class)
     override fun documentPicker(
         controller: UIDocumentPickerViewController,
         didPickDocumentsAtURLs: List<*>
@@ -97,7 +94,7 @@ private class ImportDelegate(
 private fun importViaDocumentPicker(onResult: (String?) -> Unit) {
     val root = activeRootViewController() ?: run { onResult(null); return }
     val picker = UIDocumentPickerViewController(
-        forOpeningContentTypes = listOf(UTType.Companion.JSON, UTType.Companion.PlainText),
+        forOpeningContentTypes = listOf(UTTypeJSON, UTTypePlainText),
         asCopy = true
     )
     val delegate = ImportDelegate(onResult)
