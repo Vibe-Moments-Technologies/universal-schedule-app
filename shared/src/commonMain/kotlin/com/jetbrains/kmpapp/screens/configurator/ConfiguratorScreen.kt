@@ -153,7 +153,7 @@ fun ConfiguratorScreen(
                 )
                 IconButton(onClick = {
                     val error = repository.saveSemester(config)
-                    if (error != null) showSaveError.value = error else onBack()
+                    if (error != null) showSaveError = error else onBack()
                 }) {
                     Icon(Icons.Default.Check, contentDescription = "Сохранить", tint = MaterialTheme.colorScheme.primary)
                 }
@@ -284,7 +284,7 @@ fun ConfiguratorScreen(
                         entry = entry,
                         bellText = bell?.let { "${it.startTime}–${it.endTime}" } ?: "звонок не задан",
                         onEdit = {
-                            editingEntry.value = entry
+                            editingEntry = entry
                             showEntrySheet = true
                         },
                         onDelete = {
@@ -295,7 +295,7 @@ fun ConfiguratorScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 Button(
                     onClick = {
-                        editingEntry.value = null
+                        editingEntry = null
                         showEntrySheet = true
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -338,13 +338,13 @@ fun ConfiguratorScreen(
     }
 
     // Диалог ошибки сохранения
-    showSaveError.value?.let { error ->
+    showSaveError?.let { error ->
         AlertDialog(
-            onDismissRequest = { showSaveError.value = null },
+            onDismissRequest = { showSaveError = null },
             title = { Text("Не хватает данных") },
             text = { Text(error) },
             confirmButton = {
-                TextButton(onClick = { showSaveError.value = null }) { Text("ОК") }
+                TextButton(onClick = { showSaveError = null }) { Text("ОК") }
             }
         )
     }
@@ -399,7 +399,7 @@ fun ConfiguratorScreen(
             onImported = { error ->
                 showDataSheet = false
                 if (error != null) {
-                    showSaveError.value = error
+                    showSaveError = error
                 } else {
                     onBack()
                 }
@@ -410,7 +410,7 @@ fun ConfiguratorScreen(
     // Редактор занятия
     if (showEntrySheet) {
         EntrySheet(
-            entry = editingEntry.value,
+            entry = editingEntry,
             dayOfWeek = selectedDay,
             bells = config.bells,
             weeksCount = config.weeksCount,

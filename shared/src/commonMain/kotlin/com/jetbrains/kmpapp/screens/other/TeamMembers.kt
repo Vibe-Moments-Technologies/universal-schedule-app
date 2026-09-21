@@ -1,8 +1,8 @@
 package com.jetbrains.kmpapp.screens.other
 
 import org.jetbrains.compose.resources.DrawableResource
-import kmp_app_template.shared.generated.resources.Res
-import kmp_app_template.shared.generated.resources.team_l1ratch
+import com.jetbrains.kmpapp.resources.Res
+import com.jetbrains.kmpapp.resources.team_l1ratch
 
 /**
  * Команда проекта — декларативный список в коде (не «конструктор»):

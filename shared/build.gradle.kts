@@ -74,6 +74,14 @@ dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
 
+// Пакет сгенерированного класса Res зафиксирован явно: иначе он выводится
+// из rootProject.name и ломает импорты при переименовании проекта.
+compose.resources {
+    publicResClass = false
+    packageOfResClass = "com.jetbrains.kmpapp.resources"
+    generateResClass = always
+}
+
 // AppMetrica optional modules are not used by this app.
 configurations.configureEach {
     exclude(group = "io.appmetrica.analytics", module = "analytics-ad-revenue")

@@ -51,9 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
-import kmp_app_template.shared.generated.resources.Res
-import kmp_app_template.shared.generated.resources.appicon_new_dark
-import kmp_app_template.shared.generated.resources.appicon_new_light
+import com.jetbrains.kmpapp.resources.Res
+import com.jetbrains.kmpapp.resources.appicon_new_dark
+import com.jetbrains.kmpapp.resources.appicon_new_light
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
