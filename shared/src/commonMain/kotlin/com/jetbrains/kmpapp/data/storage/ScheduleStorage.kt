@@ -67,8 +67,8 @@ class ScheduleStorage(
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
-    /** Вкладка «Задачи» в доке: единственная настраиваемая вкладка. */
-    private val _tasksEnabled = MutableStateFlow(true)
+    /** Вкладка «Задачи» в доке: единственная настраиваемая вкладка. По умолчанию выключена. */
+    private val _tasksEnabled = MutableStateFlow(false)
     val tasksEnabled: StateFlow<Boolean> = _tasksEnabled.asStateFlow()
 
     private val _themeOverlay = MutableStateFlow(ThemeOverlay.NONE)
@@ -137,7 +137,7 @@ class ScheduleStorage(
         _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT)
         // Приветственный гейт согласия скрыт: без явного согласия ничего не уходит.
         AppAnalytics.setEventsEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
-        _tasksEnabled.value = loadBooleanFlag(KEY_TASKS_ENABLED, true)
+        _tasksEnabled.value = loadBooleanFlag(KEY_TASKS_ENABLED, false)
         _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
         _notifyMinutesBefore.value =
             platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15

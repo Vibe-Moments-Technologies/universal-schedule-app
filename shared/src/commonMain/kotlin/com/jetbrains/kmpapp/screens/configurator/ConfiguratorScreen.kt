@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -65,6 +67,7 @@ import com.jetbrains.kmpapp.data.model.ScheduleEntry
 import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.model.WeekParity
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+import com.jetbrains.kmpapp.screens.components.rememberScheduleFilePicker
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -808,7 +811,7 @@ private fun EntrySheet(
     }
 }
 
-/** Экспорт в буфер обмена и импорт из вставленного JSON. */
+/** Экспорт/импорт: файл (SAF / share sheet + document picker) и буфер обмена. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DataSheet(
@@ -817,11 +820,35 @@ private fun DataSheet(
     onImported: (String?) -> Unit
 ) {
     val clipboard = LocalClipboardManager.current
+    val filePicker = rememberScheduleFilePicker()
     val savedJson = remember { repository.exportSemesterJson() }
     var importText by remember { mutableStateOf("") }
     var importError by remember { mutableStateOf<String?>(null) }
     var copied by remember { mutableStateOf(false) }
+    var exported by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Лист остаётся открытым, пока системный пикер поверх: на Android
+    // выход из композиции убивает колбэк результата SAF.
+    val launchExportFile: () -> Unit = {
+        val json = repository.exportSemesterJson()
+        if (json == null) {
+            importError = "Семестр ещё не сохранён — сначала сохраните расписание"
+        } else {
+            exported = false
+            filePicker.export("universal-schedule.json", json)
+            exported = true
+        }
+    }
+    val launchImportFile: () -> Unit = {
+        importError = null
+        filePicker.import { text ->
+            when {
+                text == null -> importError = "Файл не выбран или не читается"
+                else -> onImported(repository.importSemesterJson(text))
+            }
+        }
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -834,12 +861,24 @@ private fun DataSheet(
             Text("Экспорт и импорт", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Расписание хранится в открытом JSON-формате universal-schedule: его можно передать другому студенту или сохранить как резервную копию.",
+                text = "Расписание хранится в открытом JSON-формате universal-schedule: файл можно передать другому студенту или сохранить как резервную копию.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(12.dp))
 
+            Text("Экспорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = launchExportFile,
+                enabled = savedJson != null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.SaveAlt, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (exported) "Файл сохранён ✓" else "Сохранить файл (.json)")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = {
                     val json = repository.exportSemesterJson()
@@ -853,7 +892,7 @@ private fun DataSheet(
                 enabled = savedJson != null,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (copied) "Скопировано в буфер обмена ✓" else "Скопировать расписание (JSON)")
+                Text(if (copied) "Скопировано в буфер обмена ✓" else "Скопировать JSON в буфер")
             }
             if (savedJson == null) {
                 Text(
@@ -870,11 +909,20 @@ private fun DataSheet(
 
             Text("Импорт", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = launchImportFile,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.FileOpen, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Выбрать файл (.json)")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = importText,
                 onValueChange = { importText = it },
-                label = { Text("Вставьте JSON расписания") },
-                minLines = 4,
+                label = { Text("…или вставьте JSON расписания") },
+                minLines = 3,
                 maxLines = 8,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -883,18 +931,18 @@ private fun DataSheet(
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
+            OutlinedButton(
                 onClick = {
                     if (importText.isBlank()) {
                         importError = "Вставьте JSON расписания"
-                        return@Button
+                        return@OutlinedButton
                     }
                     val error = repository.importSemesterJson(importText)
                     onImported(error)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Импортировать и заменить текущий семестр")
+                Text("Импортировать из буфера и заменить семестр")
             }
         }
     }

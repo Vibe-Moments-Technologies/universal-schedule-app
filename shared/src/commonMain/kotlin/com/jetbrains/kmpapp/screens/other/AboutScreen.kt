@@ -187,7 +187,7 @@ fun AboutScreen(
 }
 
 /** Почта проекта: пишем письма через mailto. */
-private const val PROJECT_EMAIL = "connect@l1ratch.ru"
+private const val PROJECT_EMAIL = "vibe.moments.technologies@gmail.com"
 
 @Composable
 private fun ContactsCard() {

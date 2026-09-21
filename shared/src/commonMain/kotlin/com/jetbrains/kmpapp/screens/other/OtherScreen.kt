@@ -15,13 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Construction
-import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -137,7 +135,7 @@ private fun OtherMainContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -147,13 +145,6 @@ private fun OtherMainContent(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                IconButton(onClick = { onNavigate(OtherSubScreen.ABOUT) }) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "О программе",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         },
         modifier = modifier.fillMaxSize()
@@ -183,7 +174,15 @@ private fun OtherMainContent(
                 onClick = { onNavigate(OtherSubScreen.SETTINGS) }
             )
 
-            // 3. App Version / Auto-Update Card
+            // 3. О программе — версия, команда, лицензии.
+            OtherNavCard(
+                title = "О программе",
+                subtitle = "Версия, команда проекта, лицензии",
+                icon = Icons.Default.Info,
+                onClick = { onNavigate(OtherSubScreen.ABOUT) }
+            )
+
+            // 4. App Version / Auto-Update Card
             UpdateStatusCard(
                 updateResult = updateResult,
                 isCheckingUpdate = isCheckingUpdate,
