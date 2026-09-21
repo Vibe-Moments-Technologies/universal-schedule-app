@@ -23,7 +23,7 @@
         android:name=".ScheduleApp"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Krasava">
+        android:theme="@style/Theme.UniversalSchedule">
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

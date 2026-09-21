@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -160,6 +161,15 @@ private fun TeamMemberCard(member: TeamMember) {
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
+                    member.description?.let { description ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = description,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     member.email?.let { email ->
                         Spacer(modifier = Modifier.height(3.dp))
                         // Контактный e-mail: тап открывает почтовый клиент (mailto).
@@ -195,12 +205,12 @@ private fun TeamMemberCard(member: TeamMember) {
                     member.links.forEach { link ->
                         val (icon, tint, label) = when (link.type) {
                             TeamLinkType.GITHUB -> Triple(
-                                GitHubMark,
+                                Icons.Default.Code,
                                 MaterialTheme.colorScheme.onSurface,
                                 "GitHub"
                             )
                             TeamLinkType.TELEGRAM -> Triple(
-                                TelegramMark,
+                                Icons.AutoMirrored.Filled.OpenInNew,
                                 Color(0xFF29A9EB),
                                 "Telegram"
                             )

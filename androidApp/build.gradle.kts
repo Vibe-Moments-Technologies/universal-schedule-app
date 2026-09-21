@@ -19,7 +19,7 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "ru.vibemoments.krasava"
+        applicationId = "ru.vibemoments.universalschedule"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (project.findProperty("buildNumber") as? String)?.toIntOrNull()
@@ -39,7 +39,7 @@ android {
                     writeBytes(Base64.getDecoder().decode(b64))
                 }
                 storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "krasava"
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "universal-schedule"
                 keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
             }
         }

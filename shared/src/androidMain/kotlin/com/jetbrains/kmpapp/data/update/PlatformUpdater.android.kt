@@ -20,11 +20,11 @@ actual fun startPlatformUpdate(browserUrl: String, apkUrl: String?) {
     }
 
     val request = DownloadManager.Request(Uri.parse(downloadUrl))
-        .setTitle("Обновление Красава!")
+        .setTitle("Обновление Расписание")
         .setDescription("Скачивание новой версии")
         .setMimeType("application/vnd.android.package-archive")
         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-        .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "krasava-update.apk")
+        .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "universal-schedule-update.apk")
 
     val downloadId = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
     ContextCompat.registerReceiver(

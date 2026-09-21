@@ -1,17 +1,14 @@
 package com.jetbrains.kmpapp
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material3.MaterialTheme
@@ -33,15 +30,14 @@ import com.jetbrains.kmpapp.data.analytics.AnalyticsEvents
 import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.analytics.platformName
 import com.jetbrains.kmpapp.data.model.AppVersion
-import com.jetbrains.kmpapp.data.update.startPlatformUpdate
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.other.OtherScreen
+import com.jetbrains.kmpapp.screens.other.OtherSubScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
-import com.jetbrains.kmpapp.screens.other.isServiceScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 import com.jetbrains.kmpapp.theme.CyberpunkDarkColors
@@ -53,21 +49,16 @@ import com.jetbrains.kmpapp.theme.SakuraLightColors
 import com.jetbrains.kmpapp.theme.ThemeOverlay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.update.UpdateUrgency
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-
-private const val DOCS_BASE = "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/blob/main"
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF1E5BB0),
@@ -109,40 +100,20 @@ fun App() {
     val themeMode by repository.themeMode.collectAsState()
     val themeOverlay by repository.themeOverlay.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
-    val selectedTarget by repository.selectedTarget.collectAsState()
-    val analyticsConsent by repository.analyticsConsent.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
 
-    val betaChannel by otherViewModel.betaChannel.collectAsState()
-
-    // Аналитика: одна стартовая метрика среза аудитории + трекеры изменений.
-    // dock_config — каждый слот отдельным параметром: в панели Metrica
-    // такое строится в графики, в отличие от строки через запятую.
+    // Аналитика отключена до явного согласия (гейт скрыт) — события не уходят.
     LaunchedEffect(Unit) {
-        val params = mutableMapOf(
-            "target_type" to (selectedTarget?.type?.name ?: "none"),
-            "beta_channel" to betaChannel.toString()
-        )
-        // Срез по версиям: видно, на чём сидит аудитория. dev/contrib не
-        // шлём — статистику иначе забивают наши же тестовые сборки;
-        // stable/beta/rc различимы суффиксом версии.
+        val params = mutableMapOf<String, String>()
         val channel = AppVersion.BUILD_CHANNEL
         if (channel == "stable" || channel == "beta" || channel == "rc") {
             params["version"] = AppVersion.VERSION_NAME
             params["platform"] = platformName()
         }
         AppAnalytics.logEvent(AnalyticsEvents.SESSION_OPEN, params)
-    }
-    LaunchedEffect(dockTabs) {
-        val params = mutableMapOf("count" to dockTabs.size.toString())
-        dockTabs.forEachIndexed { index, tab -> params["slot_${index + 1}"] = tab.name }
-        AppAnalytics.logEvent(AnalyticsEvents.SESSION_DOCK_CONFIG, params)
-    }
-    LaunchedEffect(selectedTarget) {
-        selectedTarget?.let { AppAnalytics.logEvent(AnalyticsEvents.SCHEDULE_TARGET_TYPE, mapOf("type" to it.type.name)) }
     }
 
     val systemDark = isSystemInDarkTheme()
@@ -176,28 +147,36 @@ fun App() {
             }
 
             val updateResult by otherViewModel.updateResult.collectAsState()
-            var dismissedUpdateKey by rememberSaveable { mutableStateOf<String?>(null) }
+            val skippedVersion by repository.skippedUpdateVersion.collectAsState()
 
             UpdateDialog(
                 updateResult = updateResult,
-                dismissedUpdateKey = dismissedUpdateKey,
-                onDismiss = { dismissedUpdateKey = it }
+                skippedVersion = skippedVersion,
+                onSkip = { version -> otherViewModel.skipUpdate(version) }
             )
+
+            // «Задачи» выключены тумблером — вкладка недоступна нигде.
+            LaunchedEffect(dockTabs, currentTab) {
+                if (currentTab !in dockTabs) currentTab = AppTab.SCHEDULE
+            }
 
             Box(modifier = Modifier.fillMaxSize()) {
                 Crossfade(targetState = currentTab) { tab ->
                     when (tab) {
                         AppTab.SCHEDULE -> {
-                            ScheduleScreen(viewModel = scheduleViewModel)
+                            ScheduleScreen(
+                                viewModel = scheduleViewModel,
+                                onOpenConfigurator = {
+                                    otherViewModel.navigateToSubScreen(OtherSubScreen.CONFIGURATOR)
+                                    currentTab = AppTab.OTHER
+                                }
+                            )
                         }
                         AppTab.TASKS -> {
                             TasksScreen(viewModel = tasksViewModel)
                         }
                         AppTab.OTHER -> {
-                            OtherScreen(
-                                viewModel = otherViewModel,
-                                onNavigateToTab = { currentTab = it }
-                            )
+                            OtherScreen(viewModel = otherViewModel)
                         }
                     }
                 }
@@ -206,13 +185,6 @@ fun App() {
                 val isImeVisible = WindowInsets.ime.getBottom(density) > 0
 
                 if (!isImeVisible) {
-                    // Стрелка «назад» в доке: у вкладки с открытым сервисом
-                    // иконка раздела меняется на «назад» (тап = возврат).
-                    val otherSubScreen by otherViewModel.activeSubScreen.collectAsState()
-                    val backModeTab = when {
-                        currentTab == AppTab.OTHER && otherSubScreen.isServiceScreen -> AppTab.OTHER
-                        else -> null
-                    }
                     FloatingDock(
                         currentTab = currentTab,
                         onTabSelected = {
@@ -231,70 +203,48 @@ fun App() {
                             }
                         },
                         tabs = dockTabs,
-                        backModeTab = backModeTab,
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                 }
-            }
-
-            // Единый гейт при первом запуске. Без подтверждения приложением
-            // пользоваться нельзя — поэтому у диалога нет кнопки отказа.
-            if (analyticsConsent == null) {
-                ConsentDialog(onAccept = { repository.setAnalyticsConsent(true) })
             }
         }
     }
 }
 
-/** Диалог обновления: критическое / новая версия / тестовая сборка. */
+/**
+ * Предупреждение об обновлении: без скачивания и установки — «Обновить»
+ * открывает страницу релизов GitHub, «Пропустить» гасит предложение для
+ * этой версии (для следующей более новой — покажется снова).
+ */
 @Composable
 private fun UpdateDialog(
     updateResult: com.jetbrains.kmpapp.data.update.UpdateCheckResult?,
-    dismissedUpdateKey: String?,
-    onDismiss: (String) -> Unit
+    skippedVersion: String?,
+    onSkip: (String) -> Unit
 ) {
     val activeUpdate = updateResult ?: return
     if (!activeUpdate.hasUpdate) return
+    if (activeUpdate.urgency != UpdateUrgency.NEW_VERSION && activeUpdate.urgency != UpdateUrgency.CRITICAL) return
+    if (skippedVersion == activeUpdate.latestVersion) return
 
-    val updateKey = "${activeUpdate.latestVersion}_${activeUpdate.latestBuild}_${activeUpdate.urgency}"
-    val isCritical = activeUpdate.urgency == UpdateUrgency.CRITICAL
-    val isNewVersion = activeUpdate.urgency == UpdateUrgency.NEW_VERSION
-    val isPrereleaseUpdate = activeUpdate.isPrerelease
-
-    if (!(isCritical || isNewVersion) || dismissedUpdateKey == updateKey) return
+    val uriHandler = LocalUriHandler.current
 
     AlertDialog(
-        onDismissRequest = {
-            if (!isCritical) onDismiss(updateKey)
-        },
+        onDismissRequest = { },
         icon = {
             Icon(
-                imageVector = if (isCritical) Icons.Default.Warning else Icons.Default.SystemUpdate,
+                imageVector = Icons.Default.SystemUpdate,
                 contentDescription = null,
-                tint = if (isCritical) Color(0xFFC084FC) else MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
-            Text(
-                text = when {
-                    isCritical -> "Критическое обновление!"
-                    isPrereleaseUpdate -> "Доступна тестовая версия"
-                    else -> "Доступна новая версия"
-                },
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "Доступна новая версия", fontWeight = FontWeight.Bold)
         },
         text = {
             Column {
                 Text(
-                    text = when {
-                        isCritical ->
-                            "Обнаружено критическое обновление безопасности/стабильности (сборка ${activeUpdate.latestBuild}). Рекомендуется установить его сейчас."
-                        isPrereleaseUpdate ->
-                            "Вышла тестовая сборка ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild}). Она может быть менее стабильной."
-                        else ->
-                            "Вышла версия ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild})."
-                    },
+                    text = "Вышла версия ${activeUpdate.latestVersion}. Обновление устанавливается вручную — со страницы релизов на GitHub.",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 if (!activeUpdate.changelog.isNullOrBlank()) {
@@ -308,92 +258,13 @@ private fun UpdateDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    startPlatformUpdate(
-                        browserUrl = activeUpdate.actionUrl,
-                        apkUrl = if (activeUpdate.storeUrl != null) null else activeUpdate.apkUrl
-                    )
-                    onDismiss(updateKey)
-                },
-                colors = if (isCritical) {
-                    ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF881337),
-                        contentColor = Color.White
-                    )
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
-            ) {
-                Text("Обновить сейчас")
+            Button(onClick = { uriHandler.openUri(AppVersion.GITHUB_REPO_URL + "/releases/latest") }) {
+                Text("Обновить")
             }
         },
         dismissButton = {
-            if (!isCritical) {
-                TextButton(onClick = { onDismiss(updateKey) }) {
-                    Text("Позже")
-                }
-            } else {
-                TextButton(onClick = { onDismiss(updateKey) }) {
-                    Text("Игнорировать", color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    )
-}
-
-/** Гейт согласия при первом запуске: без принятия приложение не открывается. */
-@Composable
-private fun ConsentDialog(onAccept: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = { },
-        title = {
-            Text(
-                "Привет! 👋",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column {
-                Text(
-                    "Для улучшения приложения мы собираем некоторые " +
-                        "анонимизированные диагностические и аналитические данные.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(12.dp))
-                // Обязательный пункт
-                Row(verticalAlignment = Alignment.Top) {
-                    Text("•", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 8.dp))
-                    Text(
-                        "Диагностика сбоев и ошибок — обязательна, " +
-                            "помогает находить и исправлять проблемы.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                // Опциональный пункт
-                Row(verticalAlignment = Alignment.Top) {
-                    Text("•", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(end = 8.dp))
-                    Column {
-                        Text(
-                            "Аналитика использования — необязательна, " +
-                                "помогает понимать, какие функции важны.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            "Можно отключить в любой момент в настройках.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onAccept) {
-                Text("Продолжить")
+            TextButton(onClick = { onSkip(activeUpdate.latestVersion) }) {
+                Text("Пропустить")
             }
         }
     )

@@ -114,7 +114,7 @@ fun LicensesScreen(
             SectionCard(title = "Данные") {
                 LicenseItem(
                     title = "Данные расписания занятий",
-                    description = "Официальный Schedule API университета."
+                    description = "Вводятся пользователем локально и принадлежат их владельцам (учебные заведения, преподаватели)."
                 )
             }
 

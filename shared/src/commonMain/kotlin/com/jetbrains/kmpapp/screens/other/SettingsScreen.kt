@@ -14,21 +14,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Update
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -40,9 +38,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,27 +55,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
-
-import androidx.compose.material.icons.filled.TaskAlt
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
 @Composable
 fun SettingsScreen(
     viewModel: OtherViewModel,
     onBack: () -> Unit,
     onOpenDataAndCache: () -> Unit,
-    onOpenDockSettings: () -> Unit,
     onOpenTaskSettings: () -> Unit,
-    onOpenIconPicker: () -> Unit = {},
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
     onOpenScheduleCalendar: () -> Unit = {},
@@ -90,20 +82,15 @@ fun SettingsScreen(
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
-    val betaChannel by viewModel.betaChannel.collectAsState()
-    val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
-    val notificationsTargetId by viewModel.notificationsTargetId.collectAsState()
-    val vpnWarningEnabled by viewModel.vpnWarningEnabled.collectAsState()
-    val savedTargets by viewModel.savedTargets.collectAsState()
+    val tasksEnabled by viewModel.tasksEnabled.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
     var showSakuraDialog by remember { mutableStateOf(false) }
     var showCustomMinutesDialog by remember { mutableStateOf(false) }
     var customMinutesDraft by remember { mutableStateOf("") }
-    var showNotificationsTargetDialog by remember { mutableStateOf(false) }
 
     // Скролл живёт в ViewModel: LayeredNavHost пересоздаёт этот экран в
     // другом слое при переходе в подраздел — общий ScrollState переживает
@@ -198,112 +185,49 @@ fun SettingsScreen(
                         )
                     }
                 }
-
-                // App icon picker: only where the platform supports it (iOS)
-                if (AppIconManager.supportsSwitching) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable(onClick = onOpenIconPicker)
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Иконка приложения",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Новая или старая · тема — автоматически",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Открыть",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
 
-            // Section: Navigation & Dock
+            // Section: Разделы приложения
             SettingsSectionCard(
-                title = "Интерфейс и навигация",
+                title = "Разделы",
                 icon = Icons.Default.Tune
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(onClick = onOpenDockSettings)
-                        .padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Настройка нижней панели",
+                            text = "Задачи",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Порядок и состав страниц на панели",
+                            text = "Показывать раздел «Задачи» в нижней панели",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Открыть",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = tasksEnabled,
+                        onCheckedChange = { viewModel.setTasksEnabled(it) }
                     )
                 }
-            }
 
-            // Section: Tasks Settings (temporarily hidden)
-            /*
-            SettingsSectionCard(
-                title = "Задачи и дедлайны",
-                icon = Icons.Default.TaskAlt
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(onClick = onOpenTaskSettings)
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Настройки задач",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Генератор лабораторных, приоритеты, очистка базы",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Открыть",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                SettingsNavigationRow(
+                    title = "Данные и память",
+                    subtitle = "Сколько занимает расписание и настройки",
+                    onClick = onOpenDataAndCache
+                )
             }
-            */
 
             // Section: Schedule — ссылки на подстраницы
             SettingsSectionCard(
@@ -354,7 +278,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Локальное напоминание до начала пары выбранного расписания. Работает без интернета, прямо на устройстве",
+                                text = "Локальное напоминание до начала пары. Работает без интернета, прямо на устройстве",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -367,35 +291,6 @@ fun SettingsScreen(
                     }
 
                     if (notificationsEnabled) {
-                        val notificationTarget = savedTargets.firstOrNull { it.id == notificationsTargetId }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showNotificationsTargetDialog = true }
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Расписание для уведомлений",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = notificationTarget?.fullTitle ?: "Выберите расписание",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Выбрать расписание",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
                         val presets = listOf(5, 10, 15)
                         val isCustom = notifyMinutesBefore !in presets
 
@@ -471,150 +366,8 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Additional features (объединённый блок)
-            SettingsSectionCard(
-                title = "Дополнительный функционал",
-                icon = Icons.Default.Tune
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Предупреждения о VPN",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Показывать предупреждение, если VPN может помешать обновлению расписания",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = vpnWarningEnabled,
-                        onCheckedChange = { viewModel.setVpnWarningEnabled(it) }
-                    )
-                }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Бета-канал обновлений",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Проверять бета-версии и релиз-кандидаты при поиске обновлений",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = betaChannel,
-                        onCheckedChange = { viewModel.setBetaChannel(it) }
-                    )
-                }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Отправлять анонимную статистику",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Помогает находить падения и понимать, какие разделы чаще используются. Анонимно, без личных данных",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = analyticsEnabled,
-                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(80.dp))
         }
-    }
-
-    if (showNotificationsTargetDialog) {
-        AlertDialog(
-            onDismissRequest = { showNotificationsTargetDialog = false },
-            title = { Text("Расписание для уведомлений") },
-            text = {
-                if (savedTargets.isEmpty()) {
-                    Text("Сначала добавьте хотя бы одно расписание.")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        savedTargets.forEach { target ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.setNotificationsTargetId(target.id)
-                                        showNotificationsTargetDialog = false
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = target.fullTitle,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Text(
-                                        text = target.type.displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (target.id == notificationsTargetId) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Выбрано",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showNotificationsTargetDialog = false }) {
-                    Text("Закрыть")
-                }
-            }
-        )
     }
 
     if (showCustomMinutesDialog) {

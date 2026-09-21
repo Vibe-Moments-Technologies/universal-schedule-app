@@ -1,18 +1,15 @@
 package com.jetbrains.kmpapp.data
 
-import com.jetbrains.kmpapp.data.api.MireaScheduleApi
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
-import com.jetbrains.kmpapp.data.model.LessonDiffItem
-import com.jetbrains.kmpapp.data.model.LessonDiffType
-import com.jetbrains.kmpapp.data.model.ScheduleDiff
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.ScheduleExport
+import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.model.ThemeMode
-import com.jetbrains.kmpapp.data.network.detectVpnActive
-import com.jetbrains.kmpapp.data.analytics.AnalyticsEvents
-import com.jetbrains.kmpapp.data.analytics.AppAnalytics
-import com.jetbrains.kmpapp.data.parser.MireaICalParser
+import com.jetbrains.kmpapp.data.notifications.NotificationsManager
+import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
+import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.theme.ThemeOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,62 +18,58 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.time.Clock
+import kotlinx.serialization.json.Json
 
+/**
+ * Репозиторий локального расписания: единственный источник — собранный
+ * пользователем семестр ([SemesterConfig]). Никаких серверов: занятия
+ * генерируются из недельного шаблона, уведомления планируются по ним же.
+ */
 class ScheduleRepository(
-    private val api: MireaScheduleApi,
     private val storage: ScheduleStorage,
     private val powerManager: com.jetbrains.kmpapp.data.power.PlatformPowerManager,
-    private val lessonNotesStorage: com.jetbrains.kmpapp.data.storage.LessonNotesStorage
+    private val lessonNotesStorage: LessonNotesStorage
 ) {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val notificationRescheduleMutex = Mutex()
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        prettyPrint = true
+    }
 
     val isLowPowerMode: StateFlow<Boolean> = powerManager.isLowPowerMode
-    val savedTargets: StateFlow<List<ScheduleTarget>> = storage.savedTargets
-    val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
-    // Единая точка скрытия ДОП-пар: отсюда читают экран расписания,
-    // сравнение расписаний и все производные StateFlow.
-    val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = combine(
-        storage.cachedLessons,
+
+    /** Активный семестр (единственный; null — расписание не собрано). */
+    val semester: StateFlow<SemesterConfig?> = storage.semesterConfig
+
+    val currentLessons: StateFlow<List<Lesson>> = combine(
+        storage.semesterLessons,
         storage.hideAdditionalLessons
-    ) { cache, hideAdditional ->
-        if (!hideAdditional) cache
-        else cache.mapValues { (_, lessons) -> lessons.filter { it.lessonType != LessonType.ADDITIONAL } }
-    }.stateIn(scope, SharingStarted.Eagerly, emptyMap())
+    ) { lessons, hideAdditional ->
+        if (hideAdditional) lessons.filter { it.lessonType != LessonType.ADDITIONAL } else lessons
+    }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
-    val dockTabs: StateFlow<List<com.jetbrains.kmpapp.screens.components.AppTab>> = storage.dockTabs
 
-    fun setDockTabs(tabs: List<com.jetbrains.kmpapp.screens.components.AppTab>) {
-        storage.setDockTabs(tabs)
-    }
+    /** Состав дока: «Задачи» — единственная скрываемая вкладка. */
+    val dockTabs: StateFlow<List<AppTab>> = storage.tasksEnabled
+        .map { enabled ->
+            listOf(AppTab.SCHEDULE) +
+                (if (enabled) listOf(AppTab.TASKS) else emptyList()) +
+                listOf(AppTab.OTHER)
+        }
+        .stateIn(scope, SharingStarted.Eagerly, listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.OTHER))
 
-    private val _activeDiff = MutableStateFlow<ScheduleDiff?>(null)
-    val activeDiff: StateFlow<ScheduleDiff?> = _activeDiff.asStateFlow()
-
-    fun dismissDiff() {
-        _activeDiff.value = null
-    }
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    private val _refreshStatus = MutableStateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?>(null)
-    val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = _refreshStatus.asStateFlow()
-
-    fun clearRefreshStatus() {
-        _refreshStatus.value = null
-    }
+    val tasksEnabled: StateFlow<Boolean> = storage.tasksEnabled
+    fun setTasksEnabled(enabled: Boolean) = storage.setTasksEnabled(enabled)
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats = storage.getStorageStats()
 
@@ -145,85 +138,39 @@ class ScheduleRepository(
     val betaChannel: StateFlow<Boolean> = storage.betaChannel
     val analyticsEnabled: StateFlow<Boolean> = storage.analyticsEnabled
     val analyticsConsent: StateFlow<Boolean?> = storage.analyticsConsent
-    val appIcon: StateFlow<String> = storage.appIcon
     val notificationsEnabled: StateFlow<Boolean> = storage.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = storage.notifyMinutesBefore
-    val notificationsTargetId: StateFlow<Int?> = storage.notificationsTargetId
-    val vpnWarningEnabled: StateFlow<Boolean> = storage.vpnWarningEnabled
+    val skippedUpdateVersion: StateFlow<String?> = storage.skippedUpdateVersion
 
     init {
-        // Единая точка перепланирования напоминаний: кэш расписания, выбранная
-        // цель, тумблер или минуты — любое изменение (и старт приложения)
-        // пересчитывают партию уведомлений. Лишние пересчёты дешёвые: движок
-        // начинает с cancelAll.
+        // Единая точка перепланирования напоминаний: семестр, тумблер или
+        // минуты — любое изменение пересчитывает партию уведомлений.
         scope.launch {
-            var scheduledTargetId: Int? = null
-            var notificationStateInitialized = false
-            // combine принимает максимум 5 потоков — настройки свёрнуты в тройку.
             val notifSettings = combine(
                 storage.notificationsEnabled,
                 storage.notifyMinutesBefore,
                 storage.hideAdditionalLessons
             ) { enabled, minutes, hideAdditional -> Triple(enabled, minutes, hideAdditional) }
-            combine(
-                storage.cachedLessons,
-                storage.selectedTarget,
-                storage.notificationsTargetId,
-                notifSettings
-            ) { lessons, activeTarget, notificationTargetId, (enabled, minutes, hideAdditional) ->
-                NotificationsPayload(lessons, activeTarget, enabled, minutes, notificationTargetId, hideAdditional)
-            }.collect { p ->
+            combine(storage.semesterLessons, notifSettings) { lessons, (enabled, minutes, hideAdditional) ->
+                Pair(lessons, Triple(enabled, minutes, hideAdditional))
+            }.collect { (lessons, settings) ->
                 notificationRescheduleMutex.withLock {
-                    val target = p.notificationTargetId?.let { id ->
-                        p.activeTarget?.takeIf { it.id == id }
-                            ?: storage.savedTargets.value.firstOrNull { it.id == id }
-                    } ?: p.activeTarget?.also {
-                        // Миграция старых установок: раньше отдельной цели не было,
-                        // берём активное расписание и фиксируем его явно.
-                        storage.setNotificationsTargetId(it.id)
-                    }
-                    val targetLessons = target?.let { p.lessons[it.id] }
-                        ?.let { list ->
-                            if (p.hideAdditionalLessons) {
-                                list.filter { it.lessonType != LessonType.ADDITIONAL }
-                            } else list
-                        }
-                    when {
-                        !p.enabled || target == null -> {
-                            NotificationsManager.reschedule(emptyList(), p.minutes) { "" } // снимает всё
-                            scheduledTargetId = null
-                        }
-                        targetLessons != null -> {
-                            NotificationsManager.reschedule(targetLessons, p.minutes) { lesson ->
-                                val room = lesson.classrooms.firstOrNull()?.let { ", ауд. $it" } ?: ""
-                                "Через ${p.minutes} мин: ${lesson.subject}$room"
-                            }
-                            scheduledTargetId = target.id
-                        }
-                        scheduledTargetId != target.id -> {
-                            // Кэш ещё не загружен: не сносить рабочую партию при
-                            // временной ошибке. При смене цели после инициализации
-                            // убираем старые напоминания, чтобы не оставить чужую цель.
-                            if (notificationStateInitialized) {
-                                NotificationsManager.reschedule(emptyList(), p.minutes) { "" }
-                            }
-                            scheduledTargetId = target.id
+                    val (enabled, minutes, hideAdditional) = settings
+                    val targetLessons = if (hideAdditional) {
+                        lessons.filter { it.lessonType != LessonType.ADDITIONAL }
+                    } else lessons
+                    if (!enabled || targetLessons.isEmpty()) {
+                        NotificationsManager.reschedule(emptyList(), minutes) { "" }
+                    } else {
+                        NotificationsManager.reschedule(targetLessons, minutes) { lesson ->
+                            val room = lesson.classrooms.firstOrNull()?.let { ", ауд. $it" } ?: ""
+                            "Через ${minutes} мин: ${lesson.subject}$room"
                         }
                     }
-                    notificationStateInitialized = true
                 }
             }
         }
     }
-
-    private data class NotificationsPayload(
-        val lessons: Map<Int, List<Lesson>>,
-        val activeTarget: com.jetbrains.kmpapp.data.model.ScheduleTarget?,
-        val enabled: Boolean,
-        val minutes: Int,
-        val notificationTargetId: Int?,
-        val hideAdditionalLessons: Boolean
-    )
 
     fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
@@ -232,11 +179,8 @@ class ScheduleRepository(
     fun setBetaChannel(enabled: Boolean) = storage.setBetaChannel(enabled)
     fun setAnalyticsEnabled(enabled: Boolean) = storage.setAnalyticsEnabled(enabled)
     fun setAnalyticsConsent(accepted: Boolean) = storage.setAnalyticsConsent(accepted)
-    fun setAppIcon(name: String) = storage.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = storage.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = storage.setNotifyMinutesBefore(minutes)
-    fun setNotificationsTargetId(targetId: Int?) = storage.setNotificationsTargetId(targetId)
-    fun setVpnWarningEnabled(enabled: Boolean) = storage.setVpnWarningEnabled(enabled)
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
@@ -246,222 +190,43 @@ class ScheduleRepository(
         storage.setCyberpunkTheme(enabled)
     }
 
-    val currentLessons: StateFlow<List<Lesson>> = combine(
-        storage.selectedTarget,
-        storage.cachedLessons,
-        storage.hideAdditionalLessons
-    ) { selected, cache, hideAdditional ->
-        val lessons = if (selected == null) emptyList() else cache[selected.id] ?: emptyList()
-        if (hideAdditional) lessons.filter { it.lessonType != LessonType.ADDITIONAL } else lessons
-    }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    fun setSkippedUpdateVersion(version: String?) = storage.setSkippedUpdateVersion(version)
 
-    init {
-        scope.launch {
-            storage.selectedTarget.collect { target ->
-                if (target != null) {
-                    val cached = storage.getLessons(target.id)
-                    val hasCached = cached != null && cached.isNotEmpty()
-                    val lastSync = storage.getLastSyncTime(target.id)
-                    val now = Clock.System.now().toEpochMilliseconds()
-                    val isFresh = (now - lastSync) < 30 * 60 * 1000L // 30 minutes TTL
+    // ── Семестр: сохранение, удаление, экспорт/импорт ───────────────
 
-                    if (!hasCached) {
-                        // First load for this target: fetch from network with loading indicator
-                        refreshSchedule(target, silent = false)
-                    } else if (!isFresh) {
-                        // Power saving policy:
-                        // If system is in Low Power Mode / Battery Saver OR the app is in background,
-                        // do not wake up the cellular/Wi-Fi radio for silent background sync! Use cached lessons.
-                        val shouldSkipSilentSync = powerManager.isLowPowerMode.value || !powerManager.isAppInForeground.value
-                        if (!shouldSkipSilentSync) {
-                            refreshSchedule(target, silent = true)
-                        }
-                    }
-                    // Otherwise: cache is fresh (< 30 min), do not make network call!
-                }
-            }
-        }
+    /** Текст ошибки валидации или null — тогда семестр сохранён. */
+    fun saveSemester(config: SemesterConfig): String? {
+        val error = config.validate()
+        if (error != null) return error
+        storage.saveSemester(config)
+        AppAnalytics.logEvent(
+            com.jetbrains.kmpapp.data.analytics.AnalyticsEvents.SCHEDULE_TARGET_ADDED,
+            mapOf("type" to "local", "count" to "1")
+        )
+        return null
     }
 
-    suspend fun search(query: String): List<ScheduleTarget> {
-        return try {
-            api.search(query)
-        } catch (e: Exception) {
-            println("MireaScheduleApi.search failed: ${e.message}")
-            emptyList()
-        }
+    /** Удалить семестр и заметки к его парам. Задачи остаются (стираются вручную). */
+    fun deleteSemester() {
+        storage.deleteSemester()
+        lessonNotesStorage.removeNotesForTarget(SemesterConfig.TARGET_ID)
     }
 
-    fun addAndSelectTarget(target: ScheduleTarget) {
-        storage.addTarget(target)
-        scope.launch {
-            refreshSchedule(target, silent = false)
+    fun exportSemesterJson(): String? = storage.exportSemesterJson()
+
+    /** Импорт JSON (ScheduleExport или голый SemesterConfig). Текст ошибки или null. */
+    fun importSemesterJson(text: String): String? {
+        val config = try {
+            runCatching { json.decodeFromString<ScheduleExport>(text).semester }
+                .getOrElse { json.decodeFromString<SemesterConfig>(text) }
+        } catch (t: Throwable) {
+            return "Не удалось разобрать файл расписания"
         }
-    }
-
-    fun selectTarget(target: ScheduleTarget) {
-        storage.selectTarget(target)
-    }
-
-    fun removeTarget(targetId: Int) {
-        storage.removeTarget(targetId)
-        // Каскадное удаление заметок (R2): заметки к парам и предметам
-        // этого расписания удаляются вместе с ним.
-        lessonNotesStorage.removeNotesForTarget(targetId)
-    }
-
-    fun refreshCurrentSchedule() {
-        val current = selectedTarget.value ?: return
-        scope.launch {
-            refreshSchedule(current, silent = false)
-        }
-    }
-
-    fun refreshTarget(target: ScheduleTarget) {
-        scope.launch {
-            refreshSchedule(target, silent = false)
-        }
-    }
-
-    private suspend fun refreshSchedule(target: ScheduleTarget, silent: Boolean = false) {
-        if (!silent) {
-            _isLoading.value = true
-            _errorMessage.value = null
-        }
-        try {
-            val ical = api.getIcal(target.type, target.id)
-            val parsedLessons = MireaICalParser.parse(ical)
-            val oldLessons = storage.getLessons(target.id)
-            storage.saveLessons(target.id, parsedLessons)
-            storage.saveWeekMarkers(target.id, MireaICalParser.parseWeekMarkers(ical))
-            val now = Clock.System.now().toEpochMilliseconds()
-            storage.setLastSyncTime(target.id, now)
-            _errorMessage.value = null
-            AppAnalytics.logEvent(
-                AnalyticsEvents.SCHEDULE_REFRESH,
-                mapOf("result" to "ok", "vpn_active" to detectVpnActive().toString())
-            )
-            if (!silent) {
-                _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Success()
-            }
-
-            if (oldLessons != null && oldLessons.isNotEmpty()) {
-                val diff = computeDiff(oldLessons, parsedLessons, target)
-                if (diff != null) {
-                    _activeDiff.value = diff
-                }
-            }
-        } catch (e: Exception) {
-            println("refreshSchedule error for ${target.targetTitle}: ${e.message}")
-            val code = com.jetbrains.kmpapp.data.model.AppErrorCode.fromException(e)
-            AppAnalytics.logEvent(
-                AnalyticsEvents.ERROR_SCHEDULE_LOAD,
-                mapOf(
-                    "result" to "error",
-                    "code" to code.code,
-                    "vpn_active" to detectVpnActive().toString()
-                )
-            )
-            _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Error(code)
-            // Only show user-facing full-screen error if there is NO cached data at all
-            val cached = storage.getLessons(target.id)
-            val hasCached = cached != null && cached.isNotEmpty()
-            if (!hasCached) {
-                _errorMessage.value = "Ошибка (${code.code}): ${code.shortTitle}"
-            }
-        } finally {
-            if (!silent) {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun computeDiff(
-        oldLessons: List<Lesson>,
-        newLessons: List<Lesson>,
-        target: ScheduleTarget
-    ): ScheduleDiff? {
-        val oldMap = oldLessons.groupBy { "${it.date}_${it.bellNumber}_${it.subject.trim().lowercase()}" }
-        val newMap = newLessons.groupBy { "${it.date}_${it.bellNumber}_${it.subject.trim().lowercase()}" }
-
-        val items = mutableListOf<LessonDiffItem>()
-
-        for ((key, newGroup) in newMap) {
-            val oldGroup = oldMap[key]
-            if (oldGroup == null) {
-                for (lesson in newGroup) {
-                    items.add(
-                        LessonDiffItem(
-                            type = LessonDiffType.ADDED,
-                            date = lesson.date,
-                            bellNumber = lesson.bellNumber,
-                            subject = lesson.subject,
-                            description = "Новая пара (${lesson.bellNumber} пара, ауд. ${lesson.classrooms.joinToString().ifEmpty { "—" }})"
-                        )
-                    )
-                }
-            } else {
-                val oldFirst = oldGroup.first()
-                val newFirst = newGroup.first()
-                val changes = mutableListOf<String>()
-                if (oldFirst.classrooms != newFirst.classrooms) {
-                    changes.add("ауд: ${oldFirst.classrooms.joinToString().ifEmpty { "—" }} → ${newFirst.classrooms.joinToString().ifEmpty { "—" }}")
-                }
-                if (oldFirst.teachers != newFirst.teachers) {
-                    changes.add("преп: ${oldFirst.teachers.joinToString().ifEmpty { "—" }} → ${newFirst.teachers.joinToString().ifEmpty { "—" }}")
-                }
-                if (oldFirst.startTime != newFirst.startTime) {
-                    changes.add("время: ${oldFirst.startTime} → ${newFirst.startTime}")
-                }
-                if (changes.isNotEmpty()) {
-                    items.add(
-                        LessonDiffItem(
-                            type = LessonDiffType.MODIFIED,
-                            date = newFirst.date,
-                            bellNumber = newFirst.bellNumber,
-                            subject = newFirst.subject,
-                            description = "${newFirst.bellNumber} пара: ${changes.joinToString(", ")}"
-                        )
-                    )
-                }
-            }
-        }
-
-        for ((key, oldGroup) in oldMap) {
-            if (!newMap.containsKey(key)) {
-                for (lesson in oldGroup) {
-                    items.add(
-                        LessonDiffItem(
-                            type = LessonDiffType.CANCELLED,
-                            date = lesson.date,
-                            bellNumber = lesson.bellNumber,
-                            subject = lesson.subject,
-                            description = "Отменена (${lesson.bellNumber} пара)"
-                        )
-                    )
-                }
-            }
-        }
-
-        return if (items.isNotEmpty()) {
-            ScheduleDiff(
-                targetId = target.id,
-                targetTitle = target.targetTitle,
-                items = items.sortedWith(compareBy({ it.date }, { it.bellNumber }))
-            )
-        } else null
-    }
-
-    fun clearCache() {
-        storage.clearCache()
-        selectedTarget.value?.let { current ->
-            scope.launch {
-                refreshSchedule(current, silent = false)
-            }
-        }
+        return saveSemester(config)
     }
 
     fun resetAllData() {
         storage.resetAllData()
+        lessonNotesStorage.removeNotesForTarget(SemesterConfig.TARGET_ID)
     }
 }

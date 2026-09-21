@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 
@@ -55,9 +54,7 @@ fun DebugSettingsScreen(
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
-    val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
     val storageStats by viewModel.storageStats.collectAsState()
-    var showClearCacheDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -97,33 +94,20 @@ fun DebugSettingsScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            DebugSwitchCard(
-                title = "Имитировать оффлайн",
-                subtitle = "Использовать сохранённые данные без сети",
-                checked = simulateOffline,
-                onCheckedChange = DebugConfig::setOfflineSimulated
-            )
-
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Управление кешем", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text("Локальные данные", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "Расписаний: ${storageStats.schedulesCount} · пар: ${storageStats.lessonsCount} · размер: ${storageStats.formatBytes(storageStats.totalSizeBytes)}",
+                        "Семестров: ${storageStats.schedulesCount} · пар: ${storageStats.lessonsCount} · размер: ${storageStats.formatBytes(storageStats.totalSizeBytes)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    OutlinedButton(
-                        onClick = { showClearCacheDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Очистить кеш расписаний")
-                    }
                     Text(
-                        "Сохранённые группы и настройки останутся.",
+                        "Расписание полностью локальное: серверного кэша нет.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -224,23 +208,6 @@ fun DebugSettingsScreen(
                 }
             }
         }
-    }
-
-    if (showClearCacheDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearCacheDialog = false },
-            title = { Text("Очистить кеш расписаний?") },
-            text = { Text("Сохранённые расписания будут загружены заново при следующем обновлении.") },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.clearCache()
-                    showClearCacheDialog = false
-                }) { Text("Очистить") }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showClearCacheDialog = false }) { Text("Отмена") }
-            }
-        )
     }
 
     if (showResetDialog) {

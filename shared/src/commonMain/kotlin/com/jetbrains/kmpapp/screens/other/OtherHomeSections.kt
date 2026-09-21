@@ -12,12 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -25,13 +22,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.analytics.AnalyticsEvents
@@ -39,60 +36,11 @@ import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.data.update.UpdateCheckResult
 import com.jetbrains.kmpapp.data.update.UpdateUrgency
-import com.jetbrains.kmpapp.data.update.startPlatformUpdate
-import com.jetbrains.kmpapp.screens.components.AppTab
 
-/** Концентратор вкладок, спрятанных из дока (виден только если такие есть). */
-@Composable
-internal fun HiddenTabsCard(
-    hiddenTabs: List<AppTab>,
-    onNavigateToTab: (AppTab) -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Горизонтальная галерея без заголовка: пилюли самоочевидны
-            // (иконка + название), а заголовок съедал вертикальный бюджет
-            // главной «Другого», когда блок виден.
-            androidx.compose.foundation.lazy.LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(hiddenTabs) { tab ->
-                    Surface(
-                        onClick = { onNavigateToTab(tab) },
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-                        ) {
-                            Icon(
-                                imageVector = tab.selectedIcon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = tab.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Карточка версии/обновления с трёхуровневой расцветкой по срочности. */
+/**
+ * Карточка версии/обновления. Установка вручную: тап по «обновить» открывает
+ * страницу релизов GitHub в браузере — скачивания и запуска установщика нет.
+ */
 @Composable
 internal fun UpdateStatusCard(
     updateResult: UpdateCheckResult?,
@@ -101,7 +49,7 @@ internal fun UpdateStatusCard(
 ) {
     val urgency = updateResult?.urgency ?: UpdateUrgency.UP_TO_DATE
     val hasUpdate = updateResult?.hasUpdate == true
-    val isPrereleaseUpdate = updateResult?.isPrerelease == true
+    val uriHandler = LocalUriHandler.current
 
     val cardContainerColor = when (urgency) {
         UpdateUrgency.CRITICAL -> Color(0xFF581C87).copy(alpha = 0.20f)
@@ -127,19 +75,13 @@ internal fun UpdateStatusCard(
     val titleText = when {
         isCheckingUpdate -> "Проверка обновлений..."
         urgency == UpdateUrgency.CRITICAL -> "Критическое обновление!"
-        urgency == UpdateUrgency.NEW_VERSION && isPrereleaseUpdate -> "Доступна тестовая сборка!"
         urgency == UpdateUrgency.NEW_VERSION -> "Вышла новая версия!"
         urgency == UpdateUrgency.MINOR_BUILD -> "Доступна новая сборка"
         else -> "У вас актуальная версия"
     }
 
     val subtitleText = when {
-        urgency == UpdateUrgency.CRITICAL ->
-            "Версия ${updateResult?.latestVersion} • Важные исправления безопасности"
-        urgency == UpdateUrgency.NEW_VERSION && isPrereleaseUpdate ->
-            "Тестовая ${updateResult?.latestVersion} • Нажмите для перехода"
-        hasUpdate ->
-            "Версия ${updateResult?.latestVersion} • Нажмите для перехода"
+        hasUpdate -> "Версия ${updateResult?.latestVersion} • Установка вручную со страницы релизов"
         else -> AppVersion.DISPLAY_VERSION
     }
 
@@ -163,11 +105,7 @@ internal fun UpdateStatusCard(
                         AnalyticsEvents.FEATURE_UPDATE_SHOWN,
                         mapOf("version" to (updateResult?.latestVersion ?: "?"))
                     )
-                    // Маркет → страница в маркете; иначе → прямое скачивание
-                    startPlatformUpdate(
-                        browserUrl = updateResult?.actionUrl ?: AppVersion.GITHUB_REPO_URL,
-                        apkUrl = if (updateResult?.storeUrl != null) null else updateResult?.apkUrl
-                    )
+                    uriHandler.openUri(updateResult?.actionUrl ?: AppVersion.GITHUB_REPO_URL + "/releases/latest")
                 } else {
                     onCheckForUpdates()
                 }
@@ -228,5 +166,3 @@ internal fun UpdateStatusCard(
         }
     }
 }
-
-

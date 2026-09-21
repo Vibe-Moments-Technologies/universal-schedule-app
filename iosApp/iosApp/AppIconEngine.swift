@@ -35,8 +35,8 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
     /// UserDefaults, чтобы после перезапуска можно было синхронно снять
     /// старую партию без гонки с новой постановкой.
     private var scheduledLessonIds: Set<String>
-    private let scheduledIdsKey = "krasava_scheduled_lesson_ids"
-    private let queue = DispatchQueue(label: "ru.vibemoments.krasava.notifications")
+    private let scheduledIdsKey = "uschedule_scheduled_lesson_ids"
+    private let queue = DispatchQueue(label: "ru.vibemoments.universalschedule.notifications")
 
     init() {
         scheduledLessonIds = Set(UserDefaults.standard.stringArray(forKey: scheduledIdsKey) ?? [])

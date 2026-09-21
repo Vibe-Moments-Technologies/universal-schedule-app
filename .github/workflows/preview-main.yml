@@ -91,13 +91,13 @@ jobs:
       - name: 🏷️ Prepare preview APK
         run: |
           mkdir -p dist
-          cp androidApp/build/outputs/apk/debug/*.apk dist/Krasava-preview.apk
+          cp androidApp/build/outputs/apk/debug/*.apk dist/UniversalSchedule-preview.apk
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Krasava-preview-APK
-          path: dist/Krasava-preview.apk
+          name: UniversalSchedule-preview-APK
+          path: dist/UniversalSchedule-preview.apk
           if-no-files-found: error
 
   build_ipa:
@@ -164,15 +164,15 @@ jobs:
           APP_PATH=$(find build -name "*.app" -type d | head -n 1)
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
-          zip -r ../Krasava-preview.ipa Payload
+          zip -r ../UniversalSchedule-preview.ipa Payload
           rm -rf Payload
           cd ..
 
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Krasava-preview-IPA
-          path: Krasava-preview.ipa
+          name: UniversalSchedule-preview-IPA
+          path: UniversalSchedule-preview.ipa
           if-no-files-found: error
 
   publish_preview:
@@ -187,14 +187,14 @@ jobs:
       - name: 📥 Download APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Krasava-preview-APK
+          name: UniversalSchedule-preview-APK
           path: download_apk
         continue-on-error: true
 
       - name: 📥 Download IPA Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Krasava-preview-IPA
+          name: UniversalSchedule-preview-IPA
           path: download_ipa
         continue-on-error: true
 

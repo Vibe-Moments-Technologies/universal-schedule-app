@@ -157,15 +157,12 @@ fun DataAndCacheScreen(
                     // Multi-segment horizontal storage bar
                     val total = storageStats.totalSizeBytes.coerceAtLeast(1L).toFloat()
                     val schedulesRatio = (storageStats.schedulesSizeBytes / total).coerceIn(0f, 1f)
-                    val targetsRatio = (storageStats.targetsSizeBytes / total).coerceIn(0f, 1f)
                     val settingsRatio = (storageStats.settingsSizeBytes / total).coerceIn(0f, 1f)
 
                     val animSchedules by animateFloatAsState(schedulesRatio)
-                    val animTargets by animateFloatAsState(targetsRatio)
                     val animSettings by animateFloatAsState(settingsRatio)
 
                     val schedulesColor = MaterialTheme.colorScheme.primary
-                    val targetsColor = Color(0xFF0284C7)
                     val settingsColor = Color(0xFF10B981)
                     val emptyColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
@@ -183,14 +180,6 @@ fun DataAndCacheScreen(
                                         .weight(animSchedules.coerceAtLeast(0.01f))
                                         .fillMaxHeight()
                                         .background(schedulesColor)
-                                )
-                            }
-                            if (animTargets > 0f) {
-                                Box(
-                                    modifier = Modifier
-                                        .weight(animTargets.coerceAtLeast(0.01f))
-                                        .fillMaxHeight()
-                                        .background(targetsColor)
                                 )
                             }
                             if (animSettings > 0f) {
@@ -211,8 +200,7 @@ fun DataAndCacheScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        StorageLegendItem(color = schedulesColor, label = "Расписания", value = storageStats.formatBytes(storageStats.schedulesSizeBytes))
-                        StorageLegendItem(color = targetsColor, label = "База групп", value = storageStats.formatBytes(storageStats.targetsSizeBytes))
+                        StorageLegendItem(color = schedulesColor, label = "Расписание", value = storageStats.formatBytes(storageStats.schedulesSizeBytes))
                         StorageLegendItem(color = settingsColor, label = "Настройки", value = storageStats.formatBytes(storageStats.settingsSizeBytes))
                     }
                 }
@@ -235,21 +223,9 @@ fun DataAndCacheScreen(
 
                     StorageDetailRow(
                         icon = Icons.Default.Folder,
-                        title = "Кэш расписаний пар",
-                        subtitle = "${storageStats.schedulesCount} расписаний • ${storageStats.lessonsCount} занятий",
+                        title = "Расписание семестра",
+                        subtitle = "${storageStats.schedulesCount} семестр • ${storageStats.lessonsCount} занятий",
                         size = storageStats.formatBytes(storageStats.schedulesSizeBytes)
-                    )
-
-                    androidx.compose.material3.HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
-
-                    StorageDetailRow(
-                        icon = Icons.Default.PieChart,
-                        title = "Сохраненные цели и индекс",
-                        subtitle = "${storageStats.targetsCount} групп / преподавателей",
-                        size = storageStats.formatBytes(storageStats.targetsSizeBytes)
                     )
 
                     androidx.compose.material3.HorizontalDivider(
@@ -358,9 +334,8 @@ fun DataAndCacheScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Приложение спроектировано по концепции Offline-First: все расписания и задачи сохраняются локально и работают мгновенно даже без подключения к сети.\n\n" +
-                               "В отличие от веб-браузеров, кэш не накапливается сотнями мегабайт, а точечно и автоматически обновляется в фоне при наличии интернета. " +
-                               "Благодаря этому приложение всегда занимает минимум памяти на устройстве и не требует ручной очистки.",
+                        text = "Приложение спроектировано по концепции Offline-First: расписание собирается локально в конфигураторе, задачи и заметки хранятся на устройстве и работают мгновенно даже без подключения к сети.\n\n" +
+                               "Серверного кэша нет вообще — приложение занимает минимум памяти и не требует ручной очистки.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp

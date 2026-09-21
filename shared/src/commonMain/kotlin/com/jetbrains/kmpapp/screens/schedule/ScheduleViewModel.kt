@@ -8,15 +8,15 @@ import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.DateUtils
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.model.defaultBells
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -27,14 +27,9 @@ class ScheduleViewModel(
     private val repository: ScheduleRepository
 ) : ViewModel() {
 
-    val savedTargets: StateFlow<List<ScheduleTarget>> = repository.savedTargets
-    val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
-    val selectedTargetId: Int
-        get() = selectedTarget.value?.id ?: -1
-    val isLoading: StateFlow<Boolean> = repository.isLoading
-    val errorMessage: StateFlow<String?> = repository.errorMessage
-    val activeDiff: StateFlow<com.jetbrains.kmpapp.data.model.ScheduleDiff?> = repository.activeDiff
-    val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
+    /** Активный семестр; null — расписание не собрано (пустое состояние). */
+    val semester: StateFlow<SemesterConfig?> = repository.semester
+    val selectedTargetId: Int get() = SemesterConfig.TARGET_ID
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
@@ -42,7 +37,6 @@ class ScheduleViewModel(
     val calendarSwipeCollapse: StateFlow<Boolean> = repository.calendarSwipeCollapse
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
-    val vpnWarningEnabled: StateFlow<Boolean> = repository.vpnWarningEnabled
 
     private var lastAutoScrolledDate: LocalDate? = null
     private var lastAutoScrolledTargetId: Int? = null
@@ -80,42 +74,16 @@ class ScheduleViewModel(
     private val _currentMinutes = MutableStateFlow(DateUtils.currentTimeMinutes())
     val currentMinutes: StateFlow<Int> = _currentMinutes.asStateFlow()
 
-    // VPN ломает доступ к серверам МИРЭА (только с IP России) —
-    // обновляется существующим 30-секундным тиком, UI показывает плашку.
-    private val _isVpnActive = MutableStateFlow(com.jetbrains.kmpapp.data.network.detectVpnActive())
-    val isVpnActive: StateFlow<Boolean> = _isVpnActive.asStateFlow()
-
     init {
-        viewModelScope.launch {
-            repository.refreshStatus.collect { status ->
-                if (status != null) {
-                    val delayMs = if (status is com.jetbrains.kmpapp.data.model.RefreshStatus.Error) 3500L else 2500L
-                    kotlinx.coroutines.delay(delayMs)
-                    repository.clearRefreshStatus()
-                }
-            }
-        }
-
         viewModelScope.launch {
             while (true) {
                 // Power-saving tick: pause or sleep longer when in background
-                val isForeground = repository.isLowPowerMode.value.let { lowPower ->
-                    // Update current minute
-                    _currentMinutes.value = DateUtils.currentTimeMinutes()
-                    _isVpnActive.value = com.jetbrains.kmpapp.data.network.detectVpnActive()
-                    val sleepTime = if (lowPower) 60_000L else 30_000L
-                    kotlinx.coroutines.delay(sleepTime)
-                }
+                val lowPower = repository.isLowPowerMode.value
+                _currentMinutes.value = DateUtils.currentTimeMinutes()
+                val sleepTime = if (lowPower) 60_000L else 30_000L
+                kotlinx.coroutines.delay(sleepTime)
             }
         }
-    }
-
-    fun dismissStatusBadge() {
-        repository.clearRefreshStatus()
-    }
-
-    fun dismissDiff() {
-        repository.dismissDiff()
     }
 
     private val _selectedDate = MutableStateFlow(DateUtils.today())
@@ -149,6 +117,9 @@ class ScheduleViewModel(
     val currentLessons: StateFlow<List<Lesson>> = repository.currentLessons
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
 
+    /** Звонки активного семестра (или дефолт, если семестр не собран). */
+    private val bells get() = semester.value?.bells ?: defaultBells
+
     fun slotsForDate(
         date: LocalDate,
         lessons: List<Lesson> = currentLessons.value,
@@ -160,12 +131,12 @@ class ScheduleViewModel(
         date: LocalDate,
         showEmpty: Boolean
     ): List<ScheduleSlot> {
+        val bells = bells
         val forDay = lessons.filter { it.date == date }
         if (forDay.isEmpty()) {
             return if (showEmpty && date.dayOfWeek != DayOfWeek.SUNDAY) {
-                (1..7).map { bell ->
-                    val bellInfo = defaultBells.firstOrNull { it.number == bell }
-                    ScheduleSlot.Empty(bell, bellInfo?.startTime ?: "—", bellInfo?.endTime ?: "—")
+                bells.map { bell ->
+                    ScheduleSlot.Empty(bell.number, bell.startTime, bell.endTime)
                 }
             } else emptyList()
         }
@@ -179,14 +150,14 @@ class ScheduleViewModel(
         }
 
         val result = mutableListOf<ScheduleSlot>()
-        val upperBell = maxOf(forDay.maxOfOrNull { it.bellNumber } ?: 7, 7)
+        val upperBell = maxOf(forDay.maxOfOrNull { it.bellNumber } ?: 0, bells.maxOfOrNull { it.number } ?: 7)
         for (bell in 1..upperBell) {
             val items = bellMap[bell]
             if (!items.isNullOrEmpty()) {
                 val first = items.first()
                 result += ScheduleSlot.Active(bell, first.startTime, first.endTime, items)
             } else {
-                val bellInfo = defaultBells.firstOrNull { it.number == bell }
+                val bellInfo = bells.firstOrNull { it.number == bell }
                 result += ScheduleSlot.Empty(bell, bellInfo?.startTime ?: "—", bellInfo?.endTime ?: "—")
             }
         }
@@ -218,24 +189,6 @@ class ScheduleViewModel(
             AppAnalytics.logEvent(AnalyticsEvents.FEATURE_LESSON_DETAIL, mapOf("screen" to "lesson_detail"))
         }
     }
-
-    fun selectTarget(target: ScheduleTarget) {
-        repository.selectTarget(target)
-        resetAutoScroll()
-    }
-
-    fun addAndSelectTarget(target: ScheduleTarget) {
-        repository.addAndSelectTarget(target)
-        resetAutoScroll()
-    }
-
-    fun refresh() {
-        repository.refreshCurrentSchedule()
-    }
-
-    suspend fun search(query: String): List<ScheduleTarget> {
-        return repository.search(query)
-    }
 }
 
 data class DayLessonSummary(
@@ -243,4 +196,3 @@ data class DayLessonSummary(
 ) {
     val hasLessons: Boolean get() = lessonTypes.isNotEmpty()
 }
-

@@ -167,6 +167,6 @@ class LessonNotesStorage(
     }
 
     companion object {
-        private const val KEY_LESSON_NOTES = "krasava_lesson_notes"
+        private const val KEY_LESSON_NOTES = "uschedule_lesson_notes"
     }
 }

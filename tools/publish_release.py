@@ -74,7 +74,7 @@ def build_preview_notes(version, build_number, commit_sha, date):
 
 def build_release_notes(version, build_number, date, repo, tag, files, changelog):
     lines = [
-        f"### 📱 Красава! v{version}",
+        f"### 📱 Расписание v{version}",
         f"**Номер сборки:** `#{build_number}` · {date}",
         ""
     ]
@@ -120,7 +120,7 @@ def publish_preview(args, files, date):
 
 def publish_immutable(args, files, date):
     tag = f"v{args.version}"
-    title = f"Красава! v{args.version} (сборка #{args.build_number})"
+    title = f"Расписание v{args.version} (сборка #{args.build_number})"
     prerelease_flag = "--prerelease" if args.channel != "stable" else "--latest"
 
     repo = parse_repo(args.app_version_file)

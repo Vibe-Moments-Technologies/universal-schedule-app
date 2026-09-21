@@ -104,15 +104,15 @@ jobs:
           mkdir -p dist
           if [ "$CHANNEL" = "stable" ]; then
             # неизменное имя — на него ссылаются старые версии приложения
-            cp androidApp/build/outputs/apk/release/*.apk dist/Krasava.apk
+            cp androidApp/build/outputs/apk/release/*.apk dist/UniversalSchedule.apk
           else
-            cp androidApp/build/outputs/apk/release/*.apk "dist/Krasava-v${VERSION}.apk"
+            cp androidApp/build/outputs/apk/release/*.apk "dist/UniversalSchedule-v${VERSION}.apk"
           fi
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Krasava-APK
+          name: UniversalSchedule-APK
           path: dist/*.apk
           if-no-files-found: error
 
@@ -188,9 +188,9 @@ jobs:
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
           if [ "$CHANNEL" = "stable" ]; then
-            IPA_NAME="Krasava.ipa"
+            IPA_NAME="UniversalSchedule.ipa"
           else
-            IPA_NAME="Krasava-v${VERSION}.ipa"
+            IPA_NAME="UniversalSchedule-v${VERSION}.ipa"
           fi
           zip -r "../$IPA_NAME" Payload
           rm -rf Payload
@@ -200,7 +200,7 @@ jobs:
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Krasava-IPA
+          name: UniversalSchedule-IPA
           path: ${{ env.IPA_NAME }}
           if-no-files-found: error
 
@@ -223,14 +223,14 @@ jobs:
       - name: 📥 Download APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Krasava-APK
+          name: UniversalSchedule-APK
           path: download_apk
         continue-on-error: true
 
       - name: 📥 Download IPA Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Krasava-IPA
+          name: UniversalSchedule-IPA
           path: download_ipa
         continue-on-error: true
 

@@ -1,8 +1,6 @@
 package com.jetbrains.kmpapp.di
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
-import com.jetbrains.kmpapp.data.api.MireaScheduleApi
-import com.jetbrains.kmpapp.data.config.RemoteConfigLoader
 import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
@@ -11,6 +9,7 @@ import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -20,13 +19,12 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 import com.jetbrains.kmpapp.data.TaskRepository
-import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 
 import com.jetbrains.kmpapp.data.power.PlatformPowerManager
-import io.ktor.client.plugins.HttpTimeout
 
 val dataModule = module {
+    // HttpClient нужен только проверке обновлений (GitHub); расписание полностью локальное.
     single {
         val json = Json {
             ignoreUnknownKeys = true
@@ -46,14 +44,11 @@ val dataModule = module {
 
     singleOf(::PlatformPowerManager)
     singleOf(::PlatformStorage)
-    singleOf(::UnifiedSyncManager)
-    singleOf(::MireaScheduleApi)
     singleOf(::ScheduleStorage)
     singleOf(::LessonNotesStorage)
     singleOf(::ScheduleRepository)
     singleOf(::AppUpdateChecker)
     singleOf(::TaskRepository)
-    singleOf(::RemoteConfigLoader)
 }
 
 val viewModelModule = module {

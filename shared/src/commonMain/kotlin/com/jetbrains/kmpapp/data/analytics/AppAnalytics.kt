@@ -9,7 +9,7 @@ package com.jetbrains.kmpapp.data.analytics
  *
  * 2. **Опциональная аналитика** (события использования) — шлётся только
  *    если пользователь дал согласие (consent-диалог при первом запуске).
- *    Управляется тумблером в настройках (`krasava_analytics_enabled`).
+ *    Управляется тумблером в настройках (`uschedule_analytics_enabled`).
  *
  * Движок подставляет платформа на старте приложения:
  *  - Android: ScheduleApp.onCreate → AndroidAnalytics (shared/androidMain)

@@ -139,7 +139,7 @@ fun AboutScreen(
                 }
             ) {
                 Text(
-                    text = "Красава!",
+                    text = "Расписание",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -158,7 +158,7 @@ fun AboutScreen(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Наши права защищены · Не связано с РТУ МИРЭА",
+                    text = "Наши права защищены · Не связано с учебными заведениями",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                 )
@@ -187,7 +187,7 @@ fun AboutScreen(
 }
 
 /** Почта проекта: пишем письма через mailto. */
-private const val PROJECT_EMAIL = "vibe.moments.technologies@gmail.com"
+private const val PROJECT_EMAIL = "connect@l1ratch.ru"
 
 @Composable
 private fun ContactsCard() {

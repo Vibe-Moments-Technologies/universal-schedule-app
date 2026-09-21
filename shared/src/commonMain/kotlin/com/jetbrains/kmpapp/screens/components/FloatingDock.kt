@@ -55,10 +55,6 @@ enum class AppTab(
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
-/** Скрываемая вкладка (можно убрать из дока; открывается блоком в «Другом»). */
-val AppTab.isService: Boolean
-    get() = !isFixed
-
 @Composable
 fun FloatingDock(
     currentTab: AppTab,
