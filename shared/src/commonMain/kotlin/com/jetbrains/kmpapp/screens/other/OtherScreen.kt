@@ -71,15 +71,11 @@ fun OtherScreen(
                     SettingsScreen(
                         viewModel = viewModel,
                         onBack = back,
-                        onOpenDataAndCache = { viewModel.navigateToSubScreen(OtherSubScreen.DATA_AND_CACHE) },
                         onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) },
                         onOpenScheduleDisplay = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_DISPLAY) },
                         onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) },
                         onOpenScheduleCalendar = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_CALENDAR) }
                     )
-                }
-                OtherSubScreen.DATA_AND_CACHE -> {
-                    DataAndCacheScreen(viewModel = viewModel, onBack = back)
                 }
                 OtherSubScreen.TASK_SETTINGS -> {
                     TaskSettingsScreen(tasksViewModel = tasksViewModel, onBack = back)

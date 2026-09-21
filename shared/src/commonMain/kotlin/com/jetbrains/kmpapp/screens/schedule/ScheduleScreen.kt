@@ -1,5 +1,7 @@
 package com.jetbrains.kmpapp.screens.schedule
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,15 +9,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,14 +39,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.screens.components.LayeredNavHost
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
@@ -132,15 +136,6 @@ private fun ScheduleMainContent(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            ScheduleTopBar(
-                title = semester?.displayTitle ?: "Расписание",
-                subtitle = semester?.let { "${it.university} · ${it.semesterTitle.ifBlank { "семестр ${it.semesterNumber}" }}" },
-                calendarBadgeDay = if (semester != null && calendarCollapsed) selectedDate.day else null,
-                onCalendarBadgeClick = { viewModel.setCalendarCollapsed(false) },
-                onCalendarBadgeLongClick = { showMonthPicker = true }
-            )
-        },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Box(
@@ -206,8 +201,47 @@ private fun ScheduleMainContent(
                             onTitleClick = { showMonthPicker = true },
                             onCollapse = { viewModel.setCalendarCollapsed(true) },
                             swipeCollapseEnabled = calendarSwipeCollapse,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                            modifier = Modifier
+                                .statusBarsPadding()
+                                .padding(top = 4.dp, bottom = 2.dp)
                         )
+                    }
+
+                    // Календарь свёрнут: компактный кружок текущего дня вместо
+                    // шапки (тап — развернуть ленту, долгое нажатие — месяц).
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = calendarCollapsed,
+                        enter = androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.fadeOut()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onTap = { viewModel.setCalendarCollapsed(false) },
+                                            onLongPress = { showMonthPicker = true }
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = selectedDate.day.toString(),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
                     }
 
                     HorizontalPager(

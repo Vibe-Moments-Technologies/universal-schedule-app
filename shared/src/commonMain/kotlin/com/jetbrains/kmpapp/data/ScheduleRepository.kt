@@ -2,7 +2,6 @@ package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.Lesson
-import com.jetbrains.kmpapp.data.model.LessonType
 import com.jetbrains.kmpapp.data.model.ScheduleExport
 import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.model.ThemeMode
@@ -49,12 +48,7 @@ class ScheduleRepository(
     /** Активный семестр (единственный; null — расписание не собрано). */
     val semester: StateFlow<SemesterConfig?> = storage.semesterConfig
 
-    val currentLessons: StateFlow<List<Lesson>> = combine(
-        storage.semesterLessons,
-        storage.hideAdditionalLessons
-    ) { lessons, hideAdditional ->
-        if (hideAdditional) lessons.filter { it.lessonType != LessonType.ADDITIONAL } else lessons
-    }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    val currentLessons: StateFlow<List<Lesson>> = storage.semesterLessons
 
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
@@ -113,12 +107,6 @@ class ScheduleRepository(
         storage.setCalendarSwipeCollapse(enabled)
     }
 
-    val hideAdditionalLessons: StateFlow<Boolean> = storage.hideAdditionalLessons
-
-    fun setHideAdditionalLessons(enabled: Boolean) {
-        storage.setHideAdditionalLessons(enabled)
-    }
-
     val autoScrollToCurrentLesson: StateFlow<Boolean> = storage.autoScrollToCurrentLesson
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {
@@ -148,21 +136,16 @@ class ScheduleRepository(
         scope.launch {
             val notifSettings = combine(
                 storage.notificationsEnabled,
-                storage.notifyMinutesBefore,
-                storage.hideAdditionalLessons
-            ) { enabled, minutes, hideAdditional -> Triple(enabled, minutes, hideAdditional) }
-            combine(storage.semesterLessons, notifSettings) { lessons, (enabled, minutes, hideAdditional) ->
-                Pair(lessons, Triple(enabled, minutes, hideAdditional))
-            }.collect { (lessons, settings) ->
+                storage.notifyMinutesBefore
+            ) { enabled, minutes -> Pair(enabled, minutes) }
+            combine(storage.semesterLessons, notifSettings) { lessons, (enabled, minutes) ->
+                Triple(lessons, enabled, minutes)
+            }.collect { (lessons, enabled, minutes) ->
                 notificationRescheduleMutex.withLock {
-                    val (enabled, minutes, hideAdditional) = settings
-                    val targetLessons = if (hideAdditional) {
-                        lessons.filter { it.lessonType != LessonType.ADDITIONAL }
-                    } else lessons
-                    if (!enabled || targetLessons.isEmpty()) {
+                    if (!enabled || lessons.isEmpty()) {
                         NotificationsManager.reschedule(emptyList(), minutes) { "" }
                     } else {
-                        NotificationsManager.reschedule(targetLessons, minutes) { lesson ->
+                        NotificationsManager.reschedule(lessons, minutes) { lesson ->
                             val room = lesson.classrooms.firstOrNull()?.let { ", ауд. $it" } ?: ""
                             "Через ${minutes} мин: ${lesson.subject}$room"
                         }

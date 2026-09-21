@@ -24,7 +24,6 @@ enum class OtherSubScreen(val depth: Int) {
     ROOT(0),
     CONFIGURATOR(1),
     SETTINGS(1),
-    DATA_AND_CACHE(2),
     TASK_SETTINGS(2),
     // Подстраницы настроек расписания
     SCHEDULE_DISPLAY(2),
@@ -41,7 +40,6 @@ enum class OtherSubScreen(val depth: Int) {
 private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.CONFIGURATOR to OtherSubScreen.ROOT,
     OtherSubScreen.SETTINGS to OtherSubScreen.ROOT,
-    OtherSubScreen.DATA_AND_CACHE to OtherSubScreen.SETTINGS,
     OtherSubScreen.TASK_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_DISPLAY to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_PROGRESS to OtherSubScreen.SETTINGS,
@@ -68,7 +66,6 @@ class OtherViewModel(
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
     val calendarSwipeCollapse: StateFlow<Boolean> = repository.calendarSwipeCollapse
-    val hideAdditionalLessons: StateFlow<Boolean> = repository.hideAdditionalLessons
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
@@ -97,10 +94,6 @@ class OtherViewModel(
 
     fun setCalendarSwipeCollapse(enabled: Boolean) {
         repository.setCalendarSwipeCollapse(enabled)
-    }
-
-    fun setHideAdditionalLessons(enabled: Boolean) {
-        repository.setHideAdditionalLessons(enabled)
     }
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {

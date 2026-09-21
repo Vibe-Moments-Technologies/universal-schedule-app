@@ -63,7 +63,6 @@ import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 fun SettingsScreen(
     viewModel: OtherViewModel,
     onBack: () -> Unit,
-    onOpenDataAndCache: () -> Unit,
     onOpenTaskSettings: () -> Unit,
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
@@ -73,7 +72,6 @@ fun SettingsScreen(
     PlatformBackHandler(onBack = onBack)
 
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
-    val hideAdditionalLessons by viewModel.hideAdditionalLessons.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
@@ -216,17 +214,6 @@ fun SettingsScreen(
                         onCheckedChange = { viewModel.setTasksEnabled(it) }
                     )
                 }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                SettingsNavigationRow(
-                    title = "Данные и память",
-                    subtitle = "Сколько занимает расписание и настройки",
-                    onClick = onOpenDataAndCache
-                )
             }
 
             // Section: Schedule — ссылки на подстраницы
@@ -236,7 +223,7 @@ fun SettingsScreen(
             ) {
                 SettingsNavigationRow(
                     title = "Отображение",
-                    subtitle = "Пустые пары, ДОП-занятия, сокращения, авто-скролл",
+                    subtitle = "Пустые пары, сокращения, авто-скролл",
                     onClick = onOpenScheduleDisplay
                 )
                 HorizontalDivider(

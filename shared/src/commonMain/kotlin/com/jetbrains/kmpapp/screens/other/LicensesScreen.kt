@@ -118,23 +118,6 @@ fun LicensesScreen(
                 )
             }
 
-            SectionCard(title = "Юридические документы") {
-                LicenseItem(
-                    title = "Условия использования",
-                    onClick = { uriHandler.openUri("${AppVersion.GITHUB_REPO_URL}/blob/main/TERMS.md") }
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                LicenseItem(
-                    title = "Политика конфиденциальности",
-                    onClick = { uriHandler.openUri("${AppVersion.GITHUB_REPO_URL}/blob/main/PRIVACY.md") }
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                LicenseItem(
-                    title = "Политика обработки персональных данных",
-                    onClick = { uriHandler.openUri("${AppVersion.GITHUB_REPO_URL}/blob/main/PDP_POLICY.md") }
-                )
-            }
-
             Spacer(modifier = Modifier.height(80.dp))
         }
     }

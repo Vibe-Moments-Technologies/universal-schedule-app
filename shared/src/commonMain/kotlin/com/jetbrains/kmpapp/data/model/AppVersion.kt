@@ -2,15 +2,13 @@ package com.jetbrains.kmpapp.data.model
 
 object AppVersion {
     /**
-     * Базовая версия текущей линии разработки в формате YY.X.Z.
+     * Базовая версия в формате YY.X.Z. Новое приложение — старт с 26.0.0.
      * CI подставляет полный VERSION_NAME по каналу:
-     *  - тег v26.4.0 / v26.4.1      → stable
-     *  - тег v26.4.0-beta.3 / -rc.1  → beta / rc (prerelease, система скрыта)
-     *  - push в main                 → 26.X-dev.N (rolling preview)
-     * Текущая линия: 26.4.0 — «Расписание» (universal-schedule): автономный
-     * конфигуратор семестра вместо серверного API.
+     *  - тег v26.0.0 / v26.0.1       → stable
+     *  - тег v26.0.0-beta.N / -rc.N   → prerelease (бета-система скрыта)
+     *  - push в main                  → 26.X-dev.N (rolling preview)
      */
-    const val RELEASE_VERSION = "26.4.0"
+    const val RELEASE_VERSION = "26.0.0"
     const val VERSION_NAME = RELEASE_VERSION
 
     /** stable | beta | rc | dev | contrib — подставляет CI через tools/versioning.py */
@@ -19,9 +17,9 @@ object AppVersion {
     /**
      * Числовой код сборки. CI вычисляет ОДИН раз на запуск в resolve-джобе
      * (epoch-секунды) и раздаёт всем джобам через --build-id: монотонно во
-     * всех каналах, влезает в Int32 / Android versionCode (max 2147464647).
+     * всех каналах, влезает в Int32 / Android versionCode (max 2147483647).
      */
-    const val BUILD_NUMBER = 32
+    const val BUILD_NUMBER = 1
     const val COMMIT_SHA = "local"
 
     /** Стабильный канал обновлений (обновляется только стабильными релизами). */
@@ -32,7 +30,7 @@ object AppVersion {
 
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "«Расписание» — универсальное автономное приложение: локальный конфигуратор семестра (вуз, группа, курс, звонки, недельный шаблон занятий) вместо загрузки с сервера. Подходит любому учебному заведению, даже если расписание — только табличка в PDF. Экспорт и импорт расписания в открытом JSON-формате universal-schedule. Напоминания о занятиях и задачи работают полностью офлайн."
+    const val CHANGELOG = "Первый релиз «Расписания»: универсальный автономный конфигуратор семестра (вуз, группа, курс, звонки, недельный шаблон занятий) вместо загрузки с сервера. Подходит любому учебному заведению, даже если расписание — только табличка в PDF. Экспорт и импорт в открытом JSON-формате universal-schedule. Напоминания о занятиях и задачи работают полностью офлайн."
 
     val isTestBuild: Boolean get() = BUILD_CHANNEL != "stable"
 
