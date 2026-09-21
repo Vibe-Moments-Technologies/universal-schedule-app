@@ -1,0 +1,86 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinxSerialization)
+}
+
+kotlin {
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "Shared"
+            isStatic = true
+        }
+    }
+
+    androidLibrary {
+        namespace = "com.jetbrains.kmpapp.shared"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
+        androidResources {
+            enable = true
+        }
+    }
+
+    sourceSets {
+        androidMain.dependencies {
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.appmetrica.analytics)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+        commonMain.dependencies {
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.uiToolingPreview)
+
+            implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.compose.material.icons.core)
+            implementation(libs.compose.material.icons.extended)
+            implementation(libs.kotlinx.datetime)
+
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose.viewmodel)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}
+
+dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+// AppMetrica optional modules are not used by this app.
+configurations.configureEach {
+    exclude(group = "io.appmetrica.analytics", module = "analytics-ad-revenue")
+    exclude(group = "io.appmetrica.analytics", module = "analytics-billing")
+    exclude(group = "io.appmetrica.analytics", module = "analytics-location")
+    exclude(group = "io.appmetrica.analytics", module = "analytics-screenshot")
+    exclude(group = "io.appmetrica.analytics", module = "analytics-id-sync")
+    exclude(group = "io.appmetrica.analytics", module = "analytics-identifiers")
+    exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+}
