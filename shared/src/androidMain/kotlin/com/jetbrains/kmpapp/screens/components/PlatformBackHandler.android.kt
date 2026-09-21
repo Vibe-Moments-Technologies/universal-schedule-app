@@ -1,0 +1,10 @@
+package com.jetbrains.kmpapp.screens.components
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.Composable
+
+/** Системная кнопка/жест «назад» Android. */
+@Composable
+actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) {
+    BackHandler(enabled = enabled, onBack = onBack)
+}
