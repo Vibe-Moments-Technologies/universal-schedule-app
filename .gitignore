@@ -67,3 +67,6 @@ images/
 *.keystore
 *.jks
 *.p12
+
+# Release signing (never commit)
+release-keys/
