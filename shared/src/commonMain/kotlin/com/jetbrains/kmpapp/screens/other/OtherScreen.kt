@@ -71,8 +71,7 @@ fun OtherScreen(
                         onBack = back,
                         onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) },
                         onOpenScheduleDisplay = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_DISPLAY) },
-                        onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) },
-                        onOpenScheduleCalendar = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_CALENDAR) }
+                        onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) }
                     )
                 }
                 OtherSubScreen.TASK_SETTINGS -> {
@@ -83,9 +82,6 @@ fun OtherScreen(
                 }
                 OtherSubScreen.SCHEDULE_PROGRESS -> {
                     ScheduleProgressSettingsScreen(viewModel = viewModel, onBack = back)
-                }
-                OtherSubScreen.SCHEDULE_CALENDAR -> {
-                    ScheduleCalendarSettingsScreen(viewModel = viewModel, onBack = back)
                 }
                 OtherSubScreen.ABOUT -> {
                     AboutScreen(

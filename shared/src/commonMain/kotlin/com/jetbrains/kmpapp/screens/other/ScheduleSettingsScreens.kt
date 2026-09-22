@@ -119,31 +119,6 @@ fun ScheduleProgressSettingsScreen(
     }
 }
 
-// ── Расписание: календарь ────────────────────────────────────
-
-@Composable
-fun ScheduleCalendarSettingsScreen(
-    viewModel: OtherViewModel,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PlatformBackHandler(onBack = onBack)
-    val calendarSwipeCollapse by viewModel.calendarSwipeCollapse.collectAsState()
-
-    SettingsSubScreen(
-        title = "Календарь",
-        onBack = onBack,
-        modifier = modifier
-    ) {
-        SettingsToggleRow(
-            title = "Сворачивание календаря свайпом",
-            subtitle = "Свайп вверх по разделителю скрывает календарь над расписанием",
-            checked = calendarSwipeCollapse,
-            onCheckedChange = { viewModel.setCalendarSwipeCollapse(it) }
-        )
-    }
-}
-
 // ── Общие композаблы ─────────────────────────────────────────
 
 @Composable

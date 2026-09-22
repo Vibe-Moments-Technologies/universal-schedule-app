@@ -20,8 +20,10 @@ interface AnalyticsEngine {
 }
 
 object AppAnalytics {
-    /** Публичный ключ AppMetrica — по дизайну системы шьётся в приложение. */
-    const val API_KEY = "3960c728-5ca5-4b96-8bf2-f147994bf1f6"
+    /** Публичный ключ AppMetrica — по дизайну системы шьётся в приложение.
+     *  ВАЖНО: в iOSApp.swift ключ продублирован (const val не экспортируется
+     *  в Swift) — менять только синхронно в обоих местах. */
+    const val API_KEY = "388946ca-aae3-4c1c-9bce-9f390bc0f5ca"
 
     private var engine: AnalyticsEngine? = null
 

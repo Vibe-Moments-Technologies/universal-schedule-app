@@ -6,7 +6,8 @@ import Shared
 struct iOSApp: App {
     init() {
         KoinKt.doInitKoin()
-        if let configuration = AppMetricaConfiguration(apiKey: "fc0cde08-05c5-4718-96ee-e9674b8c33e7") {
+        // Ключ синхронизирован с AppAnalytics.API_KEY (shared) — менять вместе.
+        if let configuration = AppMetricaConfiguration(apiKey: "388946ca-aae3-4c1c-9bce-9f390bc0f5ca") {
             AppMetrica.activate(with: configuration)
         }
         AppAnalytics.shared.setEngine(engine: AppMetricaEngine())
