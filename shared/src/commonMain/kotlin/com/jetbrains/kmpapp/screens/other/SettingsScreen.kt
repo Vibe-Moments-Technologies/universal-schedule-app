@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
@@ -81,6 +82,7 @@ fun SettingsScreen(
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
     val tasksEnabled by viewModel.tasksEnabled.collectAsState()
+    val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
@@ -339,6 +341,37 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // Section: Статистика (AppMetrica)
+            SettingsSectionCard(
+                title = "Статистика",
+                icon = Icons.Default.Analytics
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Отправлять анонимную статистику",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Помогает находить падения и понимать, какие разделы чаще используются. Анонимно, без личных данных и содержимого расписания",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = analyticsEnabled,
+                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
+                    )
                 }
             }
 

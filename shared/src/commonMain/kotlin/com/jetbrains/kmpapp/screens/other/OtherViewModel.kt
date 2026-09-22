@@ -73,6 +73,7 @@ class OtherViewModel(
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val tasksEnabled: StateFlow<Boolean> = repository.tasksEnabled
+    val analyticsEnabled: StateFlow<Boolean> = repository.analyticsEnabled
     val notificationsEnabled: StateFlow<Boolean> = repository.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = repository.notifyMinutesBefore
     val skippedUpdateVersion: StateFlow<String?> = repository.skippedUpdateVersion
@@ -109,6 +110,7 @@ class OtherViewModel(
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
     fun setTasksEnabled(enabled: Boolean) = repository.setTasksEnabled(enabled)
+    fun setAnalyticsEnabled(enabled: Boolean) = repository.setAnalyticsEnabled(enabled)
     fun setNotificationsEnabled(enabled: Boolean) = repository.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = repository.setNotifyMinutesBefore(minutes)
 

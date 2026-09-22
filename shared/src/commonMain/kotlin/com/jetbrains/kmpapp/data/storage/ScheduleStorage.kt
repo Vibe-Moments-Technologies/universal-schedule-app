@@ -134,9 +134,10 @@ class ScheduleStorage(
         _cheatsBlocked.value = loadBooleanFlag(KEY_CHEATS_BLOCKED, false)
         _betaChannel.value = loadBooleanFlag(KEY_BETA_CHANNEL, false)
         _analyticsEnabled.value = loadBooleanFlag(KEY_ANALYTICS_ENABLED, true)
-        _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT)
-        // Приветственный гейт согласия скрыт: без явного согласия ничего не уходит.
-        AppAnalytics.setEventsEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
+        // Отправка включена по умолчанию: приветственный диалог согласия
+        // скрыт, согласие считаем данным; тумблер в настройках выключает.
+        _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT) ?: true
+        AppAnalytics.setEventsEnabled(_analyticsEnabled.value)
         _tasksEnabled.value = loadBooleanFlag(KEY_TASKS_ENABLED, false)
         _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
         _notifyMinutesBefore.value =
@@ -360,9 +361,12 @@ class ScheduleStorage(
 
     fun setAnalyticsEnabled(enabled: Boolean) {
         _analyticsEnabled.value = enabled
-        if (enabled) _analyticsConsent.value = _analyticsConsent.value ?: true
-        AppAnalytics.setEventsEnabled(enabled && _analyticsConsent.value != null)
-        scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
+        _analyticsConsent.value = enabled
+        AppAnalytics.setEventsEnabled(enabled)
+        scope.launch {
+            platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString())
+            platformStorage.saveString(KEY_ANALYTICS_CONSENT, enabled.toString())
+        }
     }
 
     fun setAnalyticsConsent(accepted: Boolean) {

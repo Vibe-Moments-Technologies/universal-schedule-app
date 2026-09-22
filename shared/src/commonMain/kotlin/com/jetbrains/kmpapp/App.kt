@@ -105,7 +105,7 @@ fun App() {
     val otherViewModel: OtherViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
 
-    // Аналитика отключена до явного согласия (гейт скрыт) — события не уходят.
+    // Аналитика включена по умолчанию; выключается тумблером в настройках.
     LaunchedEffect(Unit) {
         val params = mutableMapOf<String, String>()
         val channel = AppVersion.BUILD_CHANNEL
