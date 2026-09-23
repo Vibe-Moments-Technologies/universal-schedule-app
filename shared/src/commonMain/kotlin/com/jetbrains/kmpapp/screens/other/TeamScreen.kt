@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -205,7 +204,7 @@ private fun TeamMemberCard(member: TeamMember) {
                     member.links.forEach { link ->
                         val (icon, tint, label) = when (link.type) {
                             TeamLinkType.GITHUB -> Triple(
-                                Icons.Default.Code,
+                                GitHubMark,
                                 MaterialTheme.colorScheme.onSurface,
                                 "GitHub"
                             )

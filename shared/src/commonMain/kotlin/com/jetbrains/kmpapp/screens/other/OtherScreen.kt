@@ -185,7 +185,9 @@ private fun OtherMainContent(
                 onCheckForUpdates = { viewModel.checkForUpdates() }
             )
 
+            // 5. Ссылки проекта — намеренно без рамок и фона: GitHub и Boosty.
             Spacer(modifier = Modifier.height(2.dp))
+            ProjectSocialLinks()
         }
     }
 }

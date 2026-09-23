@@ -28,6 +28,7 @@ object AnalyticsEvents {
     // ── Навигация ─────────────────────────────────────────────
     const val NAV_TAB_OPEN = "nav_tab_open"
     const val NAV_SCREEN_VIEW = "nav_screen_view"
+    const val NAV_SOCIAL_OPEN = "nav_social_open"
 
     // ── Расписание ────────────────────────────────────────────
     const val SCHEDULE_TARGET_ADDED = "schedule_target_added"
