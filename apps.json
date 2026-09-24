@@ -7,10 +7,10 @@
       "name": "Расписание",
       "bundleIdentifier": "ru.vibemoments.universalschedule",
       "developerName": "l1ratch",
-      "localizedDescription": "Универсальное офлайн-расписание: локальный конфигуратор семестра для любого учебного заведения, напоминания и задачи.\n\nКанал: stable\nСборка: 26.0.0\nОбновлено: 2026-09-21 21:32 UTC",
+      "localizedDescription": "Универсальное офлайн-расписание: локальный конфигуратор семестра для любого учебного заведения, напоминания и задачи.\n\nКанал: stable\nСборка: 26.0.0\nОбновлено: 2026-09-24 16:51 UTC",
       "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/universal-schedule-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
       "version": "26.0.0",
-      "versionDate": "2026-09-21T21:32:50.919424+00:00",
+      "versionDate": "2026-09-24T16:51:43.661730+00:00",
       "downloadURL": "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases/latest/download/UniversalSchedule.ipa",
       "tintColor": "4F46E5",
       "channel": "stable"

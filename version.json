@@ -1,6 +1,6 @@
 {
   "version": "26.0.0",
-  "build": 1,
+  "build": 1790267606,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Первый релиз «Расписания»: универсальный автономный конфигуратор семестра (вуз, группа, курс, звонки, недельный шаблон занятий) вместо загрузки с сервера. Подходит любому учебному заведению, даже если расписание — только табличка в PDF. Экспорт и импорт в открытом JSON-формате universal-schedule. Напоминания о занятиях и задачи работают полностью офлайн.",
@@ -9,6 +9,6 @@
   "ipa_url": "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases/latest/download/UniversalSchedule.ipa",
   "channel": "stable",
   "prerelease": false,
-  "updated_at": "2026-09-21T21:32:50.919424+00:00",
-  "commit_sha": "f2042c8"
+  "updated_at": "2026-09-24T16:51:43.661605+00:00",
+  "commit_sha": "4fc6bc9"
 }
