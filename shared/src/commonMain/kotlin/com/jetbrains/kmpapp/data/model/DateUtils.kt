@@ -19,7 +19,7 @@ object DateUtils {
     }
 
     fun getWeekDates(anchorDate: LocalDate): List<LocalDate> {
-        val monday = anchorDate.minus(DatePeriod(days = anchorDate.dayOfWeek.isoNumber - 1))
+        val monday = anchorDate.minus(DatePeriod(days = anchorDate.dayOfWeek.ordinal))
         return (0..6).map { monday.plus(DatePeriod(days = it)) }
     }
 
