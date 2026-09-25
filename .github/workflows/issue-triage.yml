@@ -262,16 +262,12 @@ jobs:
               labelsToAdd.add("bug");
             }
 
-            if (fullText.includes("расписани") || fullText.includes("пар") || fullText.includes("ical") || fullText.includes("неделя") || fullText.includes("звонк")) {
-              labelsToAdd.add("schedule-data");
+            if (fullText.includes("расписани") || fullText.includes("пар") || fullText.includes("неделя") || fullText.includes("звонк") || fullText.includes("конфигуратор") || fullText.includes("семестр") || fullText.includes("импорт") || fullText.includes("экспорт")) {
+              labelsToAdd.add("schedule");
             }
 
             if (fullText.includes("задач") || fullText.includes("предмет") || fullText.includes("дедлайн") || fullText.includes("подзадач") || fullText.includes("баллы")) {
               labelsToAdd.add("tasks");
-            }
-
-            if (fullText.includes("аудитор") || fullText.includes("свободн") || fullText.includes("этаж") || fullText.includes("корпус") || fullText.includes("кампус") || fullText.includes("карт")) {
-              labelsToAdd.add("rooms");
             }
 
             if (fullText.includes("дизайн") || fullText.includes("верстк") || fullText.includes("анимаци") || fullText.includes("док") || fullText.includes("кнопк") || fullText.includes("шторк") || fullText.includes("тем")) {
@@ -383,8 +379,8 @@ jobs:
               }
             } else if (isFeature) {
               reply += "✨ **Спасибо за предложение!** Новые идеи помогают сделать приложение удобнее для всех студентов и преподавателей. Предложение передано на обсуждение в план развития проекта.\n\n";
-            } else if (labelsToAdd.has("schedule-data")) {
-              reply += "📅 **Проверка данных расписания:** Приложение обновляет и кэширует расписание с портала `schedule-of.mirea.ru` на 30 минут. Если расписание на сайте изменилось только что, попробуйте потянуть экран вниз (Pull-to-refresh) для сброса кэша.\n\n";
+            } else if (labelsToAdd.has("schedule")) {
+              reply += "📅 **Данные расписания:** Расписание в приложении полностью локальное — серверов и кэша нет, приложение ничего не загружает из интернета. Если сетка не совпадает с реальным расписанием, проверьте семестр в «Другое → Конфигуратор расписания»: дату начала (понедельник первой недели), звонки, чётность недель и диапазоны недель у пар. Формат конфигурации описан в `docs/SCHEDULE_FORMAT.md`.\n\n";
             } else {
               reply += "💬 **Ваш запрос принят.** Разработчики ответят вам при первой возможности.\n\n";
             }

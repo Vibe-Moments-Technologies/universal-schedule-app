@@ -26,50 +26,25 @@ data class VersionFeed(
     val critical: Boolean = false,
     @SerialName("min_supported_build")
     val minSupportedBuild: Int = 0,
-    val changelog: String? = null,
-    @SerialName("download_url")
-    val downloadUrl: String? = null,
-    @SerialName("apk_url")
-    val apkUrl: String? = null,
-    @SerialName("ipa_url")
-    val ipaUrl: String? = null,
-    val channel: String = "stable",
-    val prerelease: Boolean = false
-)
-
-@Serializable
-data class GitHubAsset(
-    val name: String = "",
-    @SerialName("browser_download_url")
-    val browserDownloadUrl: String = ""
+    val changelog: String? = null
 )
 
 @Serializable
 data class GitHubRelease(
     @SerialName("tag_name")
     val tagName: String = "",
-    val name: String? = null,
     val body: String? = null,
     @SerialName("html_url")
-    val htmlUrl: String = "",
-    val assets: List<GitHubAsset> = emptyList()
+    val htmlUrl: String = ""
 )
 
 data class UpdateCheckResult(
     val urgency: UpdateUrgency,
     val latestVersion: String,
-    val latestBuild: Int,
-    val currentVersion: String = AppVersion.VERSION_NAME,
-    val currentBuild: Int = AppVersion.BUILD_NUMBER,
-    val isCritical: Boolean = false,
     val changelog: String? = null,
-    val releaseUrl: String,
-    val channel: String = "stable"
+    val releaseUrl: String
 ) {
     val hasUpdate: Boolean get() = urgency != UpdateUrgency.UP_TO_DATE
-
-    /** URL для кнопки «Обновить»: страница релизов GitHub (установка вручную). */
-    val actionUrl: String get() = releaseUrl
 }
 
 /**
@@ -104,8 +79,8 @@ class AppUpdateChecker(
 
             val hasNewerVersion = VersionComparator.compare(feed.version, AppVersion.VERSION_NAME) > 0
             val hasNewerBuild = feed.build > AppVersion.BUILD_NUMBER
-            val isUnderMinSupported = AppVersion.BUILD_NUMBER < feed.minSupportedBuild
-            val isCritical = isUnderMinSupported || (feed.critical && (hasNewerVersion || hasNewerBuild))
+            val isCritical = AppVersion.BUILD_NUMBER < feed.minSupportedBuild ||
+                (feed.critical && (hasNewerVersion || hasNewerBuild))
 
             val urgency = when {
                 isCritical -> UpdateUrgency.CRITICAL
@@ -117,13 +92,8 @@ class AppUpdateChecker(
             UpdateCheckResult(
                 urgency = urgency,
                 latestVersion = feed.version,
-                latestBuild = feed.build,
-                currentVersion = AppVersion.VERSION_NAME,
-                currentBuild = AppVersion.BUILD_NUMBER,
-                isCritical = isCritical,
                 changelog = feed.changelog,
-                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
-                channel = feed.channel.ifBlank { "stable" }
+                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest"
             )
         } catch (e: Throwable) {
             println("Feed check error ($url): ${e.message}")
@@ -146,13 +116,8 @@ class AppUpdateChecker(
             UpdateCheckResult(
                 urgency = if (isNewerVersion) UpdateUrgency.NEW_VERSION else UpdateUrgency.UP_TO_DATE,
                 latestVersion = latestTag,
-                latestBuild = AppVersion.BUILD_NUMBER,
-                currentVersion = AppVersion.VERSION_NAME,
-                currentBuild = AppVersion.BUILD_NUMBER,
-                isCritical = false,
                 changelog = release.body,
-                releaseUrl = release.htmlUrl.ifBlank { "https://github.com/$GITHUB_REPO/releases/latest" },
-                channel = "stable"
+                releaseUrl = release.htmlUrl.ifBlank { "https://github.com/$GITHUB_REPO/releases/latest" }
             )
         } catch (t: Throwable) {
             println("GitHub API update check error: ${t.message}")

@@ -2,16 +2,13 @@ package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,11 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,8 +53,6 @@ fun WeekCalendarStrip(
     onDateSelected: (LocalDate) -> Unit,
     lessonSummaries: Map<LocalDate, DayLessonSummary> = emptyMap(),
     onTitleClick: () -> Unit = {},
-    onCollapse: () -> Unit = {},
-    swipeCollapseEnabled: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val today = DateUtils.today()
@@ -295,43 +288,13 @@ fun WeekCalendarStrip(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Разделитель. Полоса жеста (14dp) появляется только при включённом
-        // сворачивании свайпом; иначе — разделитель в упор, без пустоты.
-        val divider = @Composable {
-            androidx.compose.material3.HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                thickness = 0.6.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-            )
-        }
-        if (swipeCollapseEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(14.dp)
-                    .pointerInput(Unit) {
-                        var accumulated = 0f
-                        detectVerticalDragGestures(
-                            onDragStart = { accumulated = 0f },
-                            onVerticalDrag = { change, dragAmount ->
-                                change.consume()
-                                accumulated -= dragAmount
-                                if (accumulated > 40f) {
-                                    accumulated = 0f
-                                    onCollapse()
-                                }
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                divider()
-            }
-        } else {
-            divider()
-        }
+        androidx.compose.material3.HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            thickness = 0.6.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+        )
     }
 }
 

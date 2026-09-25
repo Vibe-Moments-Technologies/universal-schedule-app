@@ -19,22 +19,13 @@ object DateUtils {
     }
 
     fun getWeekDates(anchorDate: LocalDate): List<LocalDate> {
-        val dayOfWeekIndex = when (anchorDate.dayOfWeek) {
-            DayOfWeek.MONDAY -> 0
-            DayOfWeek.TUESDAY -> 1
-            DayOfWeek.WEDNESDAY -> 2
-            DayOfWeek.THURSDAY -> 3
-            DayOfWeek.FRIDAY -> 4
-            DayOfWeek.SATURDAY -> 5
-            DayOfWeek.SUNDAY -> 6
-        }
-        val monday = anchorDate.minus(DatePeriod(days = dayOfWeekIndex))
+        val monday = anchorDate.minus(DatePeriod(days = anchorDate.dayOfWeek.isoNumber - 1))
         return (0..6).map { monday.plus(DatePeriod(days = it)) }
     }
 
     fun getWeekInfo(date: LocalDate): SemesterWeekInfo {
-        // Источник истины — маркеры недель из iCal-фида; расчёт ниже — фолбэк,
-        // пока фид не загружен или не покрывает дату.
+        // Источник истины — маркеры недель активного семестра; расчёт ниже —
+        // фолбэк, пока семестр не собран или не покрывает дату.
         val weekNumber = SemesterWeeks.weekNumberFor(date) ?: computedWeekNumber(date)
         return SemesterWeekInfo(
             weekNumber = weekNumber.coerceAtLeast(1),
@@ -132,15 +123,6 @@ object DateUtils {
             return (passed / total).coerceIn(0.01f, 1.0f)
         }
         return null
-    }
-
-    /**
-     * Returns remaining minutes for a lesson if it's currently ongoing, or null otherwise.
-     */
-    fun getRemainingLessonMinutes(endTime: String, currentMinutes: Int = currentTimeMinutes()): Int? {
-        val end = parseTimeToMinutes(endTime) ?: return null
-        val remaining = end - currentMinutes
-        return if (remaining > 0) remaining else null
     }
 }
 

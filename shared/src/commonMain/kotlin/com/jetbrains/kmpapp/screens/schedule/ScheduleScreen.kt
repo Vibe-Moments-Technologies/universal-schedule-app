@@ -1,15 +1,11 @@
 package com.jetbrains.kmpapp.screens.schedule
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,7 +13,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Construction
@@ -39,12 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.screens.components.LayeredNavHost
 import kotlinx.datetime.DatePeriod
@@ -94,7 +86,6 @@ private fun ScheduleMainContent(
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
-    val calendarCollapsed by viewModel.calendarCollapsed.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     // Значение НЕ читаем здесь: тик раз в 30 секунд не должен пересобирать
@@ -102,8 +93,7 @@ private fun ScheduleMainContent(
     // «сегодня» (см. LessonCard).
     val currentMinutesState = viewModel.currentMinutes.collectAsState()
 
-    // Месячный календарь: по тапу на «Сентябрь 2026 • N неделя» или долгому
-    // нажатию на кружок дня в топбаре (когда лента свёрнута).
+    // Месячный календарь: по тапу на «Сентябрь 2026 • N неделя».
     var showMonthPicker by remember { mutableStateOf(false) }
 
     val today = com.jetbrains.kmpapp.data.model.DateUtils.today()
@@ -188,59 +178,15 @@ private fun ScheduleMainContent(
                     }
                 } else {
                     // Week calendar strip with navigation bar
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = !calendarCollapsed,
-                        enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
-                    ) {
-                        WeekCalendarStrip(
-                            selectedDate = selectedDate,
-                            onDateSelected = { viewModel.selectDate(it) },
-                            lessonSummaries = dayLessonSummaries,
-                            onTitleClick = { showMonthPicker = true },
-                            onCollapse = { viewModel.setCalendarCollapsed(true) },
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .padding(top = 4.dp, bottom = 2.dp)
-                        )
-                    }
-
-                    // Календарь свёрнут: компактный кружок текущего дня вместо
-                    // шапки (тап — развернуть ленту, долгое нажатие — месяц).
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = calendarCollapsed,
-                        enter = androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.fadeOut()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .statusBarsPadding()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary)
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(
-                                            onTap = { viewModel.setCalendarCollapsed(false) },
-                                            onLongPress = { showMonthPicker = true }
-                                        )
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = selectedDate.day.toString(),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        }
-                    }
+                    WeekCalendarStrip(
+                        selectedDate = selectedDate,
+                        onDateSelected = { viewModel.selectDate(it) },
+                        lessonSummaries = dayLessonSummaries,
+                        onTitleClick = { showMonthPicker = true },
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(top = 4.dp, bottom = 2.dp)
+                    )
 
                     HorizontalPager(
                         state = pagerState,
@@ -271,8 +217,8 @@ private fun ScheduleMainContent(
                                 showBreakProgress = showBreakProgress,
                                 showAbbreviatedNames = showAbbreviatedNames,
                                 autoScrollToCurrentLesson = autoScrollToCurrentLesson,
-                                canAutoScroll = { viewModel.canAutoScroll(it, viewModel.selectedTargetId) },
-                                markAutoScrolled = { viewModel.markAutoScrolled(it, viewModel.selectedTargetId) },
+                                canAutoScroll = { viewModel.canAutoScroll(it) },
+                                markAutoScrolled = { viewModel.markAutoScrolled(it) },
                                 onLessonClick = { viewModel.selectLessonForDetail(it) },
                                 modifier = Modifier.fillMaxSize()
                             )

@@ -20,8 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
@@ -46,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
-import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import org.koin.compose.koinInject
 
@@ -60,7 +57,6 @@ fun ScheduleSlotCard(
     showEmptyLessonProgress: Boolean = true,
     showBreakProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier
 ) {
     when (slot) {
@@ -73,7 +69,6 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
-                    scheduleTargetType = scheduleTargetType,
                     modifier = modifier
                 )
             } else {
@@ -87,7 +82,6 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
-                    scheduleTargetType = scheduleTargetType,
                     modifier = modifier
                 )
             }
@@ -114,7 +108,6 @@ fun LessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier,
     pageIndicator: Pair<Int, Int>? = null,
     horizontalMargin: androidx.compose.ui.unit.Dp = 16.dp
@@ -221,31 +214,8 @@ fun LessonCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Details: show the useful entity for the selected schedule target.
-                val groupsText = lesson.groups.joinToString(", ")
-                val showGroupsAsTeacherReplacement = scheduleTargetType == ScheduleTargetType.TEACHER && lesson.groups.isNotEmpty()
-
-                if (showGroupsAsTeacherReplacement) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Group,
-                            contentDescription = "Группы",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = groupsText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                } else if (lesson.teachers.isNotEmpty()) {
+                // Детали: преподаватель и аудитория (подгруппа — в карточке пары).
+                if (lesson.teachers.isNotEmpty()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 2.dp)
@@ -267,64 +237,27 @@ fun LessonCard(
                     }
                 }
 
-                if (lesson.classrooms.isNotEmpty() || lesson.groups.size > 1) {
+                if (lesson.classrooms.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (scheduleTargetType == ScheduleTargetType.AUDITORIUM && lesson.groups.isNotEmpty()) {
-                            Icon(
-                                imageVector = Icons.Default.Group,
-                                contentDescription = "Группы",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = groupsText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                        } else if (lesson.classrooms.isNotEmpty()) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = "Аудитория",
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = lesson.classrooms.joinToString(", "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                        }
-
-                        if (scheduleTargetType == ScheduleTargetType.GROUP && lesson.groups.size > 1) {
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Icon(
-                                imageVector = Icons.Default.Group,
-                                contentDescription = "Группы",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = groupsText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Аудитория",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = lesson.classrooms.joinToString(", "),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
                     }
                 }
 
@@ -419,7 +352,6 @@ fun MultiLessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { lessons.size })
@@ -439,7 +371,6 @@ fun MultiLessonCard(
             currentMinutesState = currentMinutesState,
             showLessonProgress = showLessonProgress,
             showAbbreviatedNames = showAbbreviatedNames,
-            scheduleTargetType = scheduleTargetType,
             pageIndicator = lessons.size to pagerState.currentPage,
             horizontalMargin = 0.dp
         )

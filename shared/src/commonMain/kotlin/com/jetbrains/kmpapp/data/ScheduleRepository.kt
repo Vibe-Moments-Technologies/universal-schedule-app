@@ -95,18 +95,6 @@ class ScheduleRepository(
         storage.setShowBreakProgress(enabled)
     }
 
-    val calendarCollapsed: StateFlow<Boolean> = storage.calendarCollapsed
-
-    fun setCalendarCollapsed(collapsed: Boolean) {
-        storage.setCalendarCollapsed(collapsed)
-    }
-
-    val calendarSwipeCollapse: StateFlow<Boolean> = storage.calendarSwipeCollapse
-
-    fun setCalendarSwipeCollapse(enabled: Boolean) {
-        storage.setCalendarSwipeCollapse(enabled)
-    }
-
     val autoScrollToCurrentLesson: StateFlow<Boolean> = storage.autoScrollToCurrentLesson
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {
@@ -119,7 +107,6 @@ class ScheduleRepository(
 
     val themeOverlay: StateFlow<ThemeOverlay> = storage.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = storage.isSakuraTheme
-    val isCyberpunkTheme: StateFlow<Boolean> = storage.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = storage.isMatrixTheme
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
@@ -167,10 +154,6 @@ class ScheduleRepository(
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
-    }
-
-    fun setCyberpunkTheme(enabled: Boolean) {
-        storage.setCyberpunkTheme(enabled)
     }
 
     fun setSkippedUpdateVersion(version: String?) = storage.setSkippedUpdateVersion(version)

@@ -105,7 +105,7 @@ internal fun UpdateStatusCard(
                         AnalyticsEvents.FEATURE_UPDATE_SHOWN,
                         mapOf("version" to (updateResult?.latestVersion ?: "?"))
                     )
-                    uriHandler.openUri(updateResult?.actionUrl ?: AppVersion.GITHUB_REPO_URL + "/releases/latest")
+                    uriHandler.openUri(updateResult?.releaseUrl ?: AppVersion.GITHUB_REPO_URL + "/releases/latest")
                 } else {
                     onCheckForUpdates()
                 }

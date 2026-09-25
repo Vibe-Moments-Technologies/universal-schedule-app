@@ -68,7 +68,6 @@ class OtherViewModel(
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val themeOverlay: StateFlow<ThemeOverlay> = repository.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
-    val isCyberpunkTheme: StateFlow<Boolean> = repository.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = repository.isMatrixTheme
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
@@ -100,10 +99,6 @@ class OtherViewModel(
 
     fun setSakuraTheme(enabled: Boolean) {
         repository.setSakuraTheme(enabled)
-    }
-
-    fun setCyberpunkTheme(enabled: Boolean) {
-        repository.setCyberpunkTheme(enabled)
     }
 
     fun setMatrixTheme(enabled: Boolean) = repository.setMatrixTheme(enabled)
@@ -164,33 +159,22 @@ class OtherViewModel(
     private val _isCheckingUpdate = MutableStateFlow(false)
     val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
 
-    private val _updateStatusMessage = MutableStateFlow<String?>(null)
-    val updateStatusMessage: StateFlow<String?> = _updateStatusMessage.asStateFlow()
-
     fun checkForUpdates() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _isCheckingUpdate.value = true
-                _updateStatusMessage.value = null
-                val result = updateChecker.checkForUpdates()
-                _updateResult.value = result
-                _isCheckingUpdate.value = false
-                if (result != null && !result.hasUpdate) {
-                    _updateStatusMessage.value = "У вас установлена последняя версия (${result.currentVersion})"
-                } else if (result == null) {
-                    _updateStatusMessage.value = "Не удалось проверить обновления"
-                }
+                _updateResult.value = updateChecker.checkForUpdates()
             } catch (t: Throwable) {
                 println("checkForUpdates caught throwable: ${t.message}")
+            } finally {
                 _isCheckingUpdate.value = false
-                _updateStatusMessage.value = null
             }
         }
     }
 
+    /** Закрыть диалог обновления без пропуска версии: при следующей проверке покажется снова. */
     fun dismissUpdateDialog() {
         _updateResult.value = null
-        _updateStatusMessage.value = null
     }
 
     /** Полный ручной сброс: семестр, задачи и настройки. */

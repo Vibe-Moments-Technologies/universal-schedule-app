@@ -40,8 +40,6 @@ import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
-import com.jetbrains.kmpapp.theme.CyberpunkDarkColors
-import com.jetbrains.kmpapp.theme.CyberpunkLightColors
 import com.jetbrains.kmpapp.theme.MatrixDarkColors
 import com.jetbrains.kmpapp.theme.MatrixLightColors
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
@@ -125,7 +123,6 @@ fun App() {
 
     val colors = when (themeOverlay) {
         ThemeOverlay.SAKURA -> if (isDark) SakuraDarkColors else SakuraLightColors
-        ThemeOverlay.CYBERPUNK -> if (isDark) CyberpunkDarkColors else CyberpunkLightColors
         ThemeOverlay.MATRIX -> if (isDark) MatrixDarkColors else MatrixLightColors
         ThemeOverlay.NONE -> if (isDark) DarkColors else LightColors
     }
@@ -152,7 +149,8 @@ fun App() {
             UpdateDialog(
                 updateResult = updateResult,
                 skippedVersion = skippedVersion,
-                onSkip = { version -> otherViewModel.skipUpdate(version) }
+                onSkip = { version -> otherViewModel.skipUpdate(version) },
+                onDismiss = { otherViewModel.dismissUpdateDialog() }
             )
 
             // «Задачи» выключены тумблером — вкладка недоступна нигде.
@@ -213,14 +211,16 @@ fun App() {
 
 /**
  * Предупреждение об обновлении: без скачивания и установки — «Обновить»
- * открывает страницу релизов GitHub, «Пропустить» гасит предложение для
- * этой версии (для следующей более новой — покажется снова).
+ * открывает страницу релизов GitHub и закрывает диалог (без пропуска версии —
+ * при следующей проверке он покажется снова), «Пропустить» гасит предложение
+ * для этой версии (для следующей более новой — покажется снова).
  */
 @Composable
 private fun UpdateDialog(
     updateResult: com.jetbrains.kmpapp.data.update.UpdateCheckResult?,
     skippedVersion: String?,
-    onSkip: (String) -> Unit
+    onSkip: (String) -> Unit,
+    onDismiss: () -> Unit
 ) {
     val activeUpdate = updateResult ?: return
     if (!activeUpdate.hasUpdate) return
@@ -230,7 +230,7 @@ private fun UpdateDialog(
     val uriHandler = LocalUriHandler.current
 
     AlertDialog(
-        onDismissRequest = { },
+        onDismissRequest = onDismiss,
         icon = {
             Icon(
                 imageVector = Icons.Default.SystemUpdate,
@@ -258,7 +258,10 @@ private fun UpdateDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { uriHandler.openUri(AppVersion.GITHUB_REPO_URL + "/releases/latest") }) {
+            Button(onClick = {
+                uriHandler.openUri(AppVersion.GITHUB_REPO_URL + "/releases/latest")
+                onDismiss()
+            }) {
                 Text("Обновить")
             }
         },

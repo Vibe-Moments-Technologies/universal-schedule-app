@@ -32,12 +32,8 @@ object AppVersion {
     const val MIN_SUPPORTED_BUILD = 1
     const val CHANGELOG = "Первый релиз «Расписания»: универсальный автономный конфигуратор семестра (вуз, группа, курс, звонки, недельный шаблон занятий) вместо загрузки с сервера. Подходит любому учебному заведению, даже если расписание — только табличка в PDF. Экспорт и импорт в открытом JSON-формате universal-schedule. Напоминания о занятиях и задачи работают полностью офлайн."
 
-    val isTestBuild: Boolean get() = BUILD_CHANNEL != "stable"
-
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
     const val GITHUB_REPO = "Vibe-Moments-Technologies/universal-schedule-app"
     const val GITHUB_REPO_URL = "https://github.com/Vibe-Moments-Technologies/universal-schedule-app"
     const val GITHUB_ISSUES_URL = "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/issues"
-    const val DEVELOPER_NAME = "l1ratch"
-
 }

@@ -7,11 +7,10 @@ plugins {
 }
 
 dependencies {
+    // Всё остальное (compose, ktor-okhttp и т.д.) приходит транзитивно из
+    // shared — так же, как material3, который здесь никогда не объявлялся.
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.compose.uiToolingPreview)
-    implementation(libs.compose.foundation)
-    implementation(libs.ktor.client.okhttp)
 }
 
 android {
@@ -24,7 +23,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (project.findProperty("buildNumber") as? String)?.toIntOrNull()
             ?: System.getenv("BUILD_NUMBER")?.toIntOrNull()
-            ?: 32
+            ?: 1
         // CI подставляет версию канала через tools/versioning.py; в репо — базовая версия линии разработки
         versionName = "26.0.0"
     }
