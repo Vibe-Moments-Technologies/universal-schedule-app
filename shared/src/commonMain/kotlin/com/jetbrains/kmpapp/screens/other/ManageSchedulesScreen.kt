@@ -121,6 +121,7 @@ fun ManageSchedulesScreen(
                 }
             } else {
                 val info = semester
+                if (info != null) {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
@@ -171,6 +172,7 @@ fun ManageSchedulesScreen(
                     Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Удалить семестр")
+                }
                 }
             }
 
