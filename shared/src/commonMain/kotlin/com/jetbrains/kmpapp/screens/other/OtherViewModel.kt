@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
 import com.jetbrains.kmpapp.data.update.UpdateCheckResult
+import com.jetbrains.kmpapp.theme.CyberpunkVariant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -28,6 +29,8 @@ enum class OtherSubScreen(val depth: Int) {
     // Подстраницы настроек расписания
     SCHEDULE_DISPLAY(2),
     SCHEDULE_PROGRESS(2),
+    // Тематические темы: найденные квестами надстройки тем
+    THEMED_THEMES(2),
     ABOUT(1),
     TEAM(2),
     LICENSES(2),
@@ -42,6 +45,7 @@ private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.TASK_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_DISPLAY to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_PROGRESS to OtherSubScreen.SETTINGS,
+    OtherSubScreen.THEMED_THEMES to OtherSubScreen.SETTINGS,
     OtherSubScreen.ABOUT to OtherSubScreen.ROOT,
     OtherSubScreen.TEAM to OtherSubScreen.ABOUT,
     OtherSubScreen.LICENSES to OtherSubScreen.ABOUT,
@@ -68,7 +72,13 @@ class OtherViewModel(
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val themeOverlay: StateFlow<ThemeOverlay> = repository.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
+    val isKawaiiTheme: StateFlow<Boolean> = repository.isKawaiiTheme
+    val isCyberpunkTheme: StateFlow<Boolean> = repository.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = repository.isMatrixTheme
+    val isHalloweenActive: StateFlow<Boolean> = repository.isHalloweenActive
+    val isHalloweenRowVisible: StateFlow<Boolean> = repository.isHalloweenRowVisible
+    val unlockedThemes: StateFlow<Set<ThemeOverlay>> = repository.unlockedThemes
+    val cyberpunkVariant: StateFlow<CyberpunkVariant> = repository.cyberpunkVariant
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val tasksEnabled: StateFlow<Boolean> = repository.tasksEnabled
@@ -102,6 +112,13 @@ class OtherViewModel(
     }
 
     fun setMatrixTheme(enabled: Boolean) = repository.setMatrixTheme(enabled)
+    fun setKawaiiTheme(enabled: Boolean) = repository.setKawaiiTheme(enabled)
+    fun setCyberpunkTheme(enabled: Boolean) = repository.setCyberpunkTheme(enabled)
+    fun setHalloweenTheme(enabled: Boolean) = repository.setHalloweenTheme(enabled)
+    fun setCyberpunkVariant(variant: CyberpunkVariant) = repository.setCyberpunkVariant(variant)
+
+    /** Потеря Матрицы: выключить и убрать из списка найденных тем. */
+    fun revokeMatrixUnlock() = repository.revokeMatrixUnlock()
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
     fun setTasksEnabled(enabled: Boolean) = repository.setTasksEnabled(enabled)
@@ -134,6 +151,13 @@ class OtherViewModel(
     // дочерним), remember-состояния там не выживают. Общий ScrollState
     // переживает пересоздание экземпляров без save/restore.
     val settingsScrollState = androidx.compose.foundation.ScrollState(0)
+
+    // Реестр скроллов подстраниц: та же причина, что и у settingsScrollState.
+    private val subScreenScrolls =
+        mutableMapOf<String, androidx.compose.foundation.ScrollState>()
+
+    fun scrollState(key: String): androidx.compose.foundation.ScrollState =
+        subScreenScrolls.getOrPut(key) { androidx.compose.foundation.ScrollState(0) }
 
     fun navigateToSubScreen(subScreen: OtherSubScreen) {
         _activeSubScreen.value = subScreen

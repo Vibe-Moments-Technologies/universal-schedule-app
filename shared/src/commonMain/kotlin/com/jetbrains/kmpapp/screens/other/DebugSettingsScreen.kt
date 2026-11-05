@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +54,9 @@ fun DebugSettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val storageStats by viewModel.storageStats.collectAsState()
+    // Сезонная тема: в отладке показываем фактическое состояние (правило
+    // сезона учитывает отказ и дату), а не сохранённый оверлей.
+    val isHalloweenTheme by viewModel.isHalloweenActive.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -138,6 +142,39 @@ fun DebugSettingsScreen(
                         ) {
                             Text("Запланировать через 1 минуту")
                         }
+                    }
+                }
+            }
+
+            // Темы: хэллоуинский тумблер нужен, чтобы проверить праздничное
+            // оформление вне сезона (сама тема включается по дате
+            // автоматически: 28 октября — 3 ноября).
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Хэллоуинская тема", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "Тыквы, паутина и кровавый глитч. С 28 октября по 3 ноября включается сама. " +
+                                    "Выключение в сезон запоминается до его конца.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Switch(
+                            checked = isHalloweenTheme,
+                            onCheckedChange = viewModel::setHalloweenTheme
+                        )
                     }
                 }
             }

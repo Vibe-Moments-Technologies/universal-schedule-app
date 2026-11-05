@@ -107,7 +107,14 @@ class ScheduleRepository(
 
     val themeOverlay: StateFlow<ThemeOverlay> = storage.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = storage.isSakuraTheme
+    val isKawaiiTheme: StateFlow<Boolean> = storage.isKawaiiTheme
+    val isCyberpunkTheme: StateFlow<Boolean> = storage.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = storage.isMatrixTheme
+    val isHalloweenTheme: StateFlow<Boolean> = storage.isHalloweenTheme
+    val isHalloweenActive: StateFlow<Boolean> = storage.isHalloweenActive
+    val isHalloweenRowVisible: StateFlow<Boolean> = storage.isHalloweenRowVisible
+    val unlockedThemes: StateFlow<Set<ThemeOverlay>> = storage.unlockedThemes
+    val cyberpunkVariant: StateFlow<com.jetbrains.kmpapp.theme.CyberpunkVariant> = storage.cyberpunkVariant
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
     val betaChannel: StateFlow<Boolean> = storage.betaChannel
@@ -144,6 +151,12 @@ class ScheduleRepository(
 
     fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
+    fun setKawaiiTheme(enabled: Boolean) = storage.setKawaiiThemeExclusive(enabled)
+    fun setCyberpunkTheme(enabled: Boolean) = storage.setCyberpunkTheme(enabled)
+    fun setHalloweenTheme(enabled: Boolean) = storage.setHalloweenTheme(enabled)
+    fun setCyberpunkVariant(variant: com.jetbrains.kmpapp.theme.CyberpunkVariant) =
+        storage.setCyberpunkVariant(variant)
+    fun revokeMatrixUnlock() = storage.revokeMatrixUnlock()
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
     fun setBetaChannel(enabled: Boolean) = storage.setBetaChannel(enabled)

@@ -40,11 +40,15 @@ import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
+import com.jetbrains.kmpapp.theme.HalloweenDarkColors
+import com.jetbrains.kmpapp.theme.KawaiiDarkColors
+import com.jetbrains.kmpapp.theme.KawaiiLightColors
 import com.jetbrains.kmpapp.theme.MatrixDarkColors
 import com.jetbrains.kmpapp.theme.MatrixLightColors
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
 import com.jetbrains.kmpapp.theme.SakuraLightColors
 import com.jetbrains.kmpapp.theme.ThemeOverlay
+import com.jetbrains.kmpapp.theme.cyberpunkColors
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -121,13 +125,41 @@ fun App() {
         ThemeMode.DARK -> true
     }
 
-    val colors = when (themeOverlay) {
-        ThemeOverlay.SAKURA -> if (isDark) SakuraDarkColors else SakuraLightColors
-        ThemeOverlay.MATRIX -> if (isDark) MatrixDarkColors else MatrixLightColors
-        ThemeOverlay.NONE -> if (isDark) DarkColors else LightColors
+    // Хэллоуин: автоматическая, только тёмная, перекрывает любую другую тему.
+    // Сезон — за 3 дня до 31 октября и через 3 дня после, то есть 28 октября —
+    // 3 ноября включительно, по локальной дате устройства. Правила живут в
+    // хранилище, чтобы тумблер в списке тем и оформление считались одинаково:
+    // сезон + отсутствие отказа либо ручное включение.
+    val halloweenActive by repository.isHalloweenActive.collectAsState()
+    // Вариант палитры «Киберпанка» хранится отдельно от оверлея: тема может
+    // быть выключена, но выбранный вариант переживает переключения тем.
+    val cyberpunkVariant by repository.cyberpunkVariant.collectAsState()
+
+    val colors = if (halloweenActive) {
+        HalloweenDarkColors
+    } else {
+        when (themeOverlay) {
+            ThemeOverlay.SAKURA -> if (isDark) SakuraDarkColors else SakuraLightColors
+            // Кавай — пастель из трёх акцентов (голубой, розовый, золотой) на
+            // кремово-сиреневых поверхностях; намеренно не похожа ни на
+            // тёплую розовую Сакуру, ни на жёлто-циановый Киберпанк.
+            ThemeOverlay.KAWAII -> if (isDark) KawaiiDarkColors else KawaiiLightColors
+            ThemeOverlay.CYBERPUNK -> cyberpunkColors(cyberpunkVariant, isDark)
+            ThemeOverlay.MATRIX -> if (isDark) MatrixDarkColors else MatrixLightColors
+            // Перекрыт проверкой halloweenActive выше; ветка нужна для
+            // исчерпывающего when.
+            ThemeOverlay.HALLOWEEN -> HalloweenDarkColors
+            ThemeOverlay.NONE -> if (isDark) DarkColors else LightColors
+        }
     }
 
     MaterialTheme(colorScheme = colors) {
+        // На Хэллоуин глитч-надписи включаются как «страшный» эффект:
+        // светлые заголовки получают кровавые двойники со смещением.
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.jetbrains.kmpapp.theme.LocalGlitchTextEnabled provides halloweenActive,
+            com.jetbrains.kmpapp.theme.LocalHalloweenEnabled provides halloweenActive
+        ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -205,6 +237,7 @@ fun App() {
                     )
                 }
             }
+        }
         }
     }
 }

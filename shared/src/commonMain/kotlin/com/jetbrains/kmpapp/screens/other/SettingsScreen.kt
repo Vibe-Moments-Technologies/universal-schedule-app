@@ -67,6 +67,7 @@ fun SettingsScreen(
     onOpenTaskSettings: () -> Unit,
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
+    onOpenThemedThemes: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
@@ -78,7 +79,7 @@ fun SettingsScreen(
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
-    val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
+    val isKawaiiTheme by viewModel.isKawaiiTheme.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
     val tasksEnabled by viewModel.tasksEnabled.collectAsState()
@@ -86,7 +87,7 @@ fun SettingsScreen(
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
-    var showSakuraDialog by remember { mutableStateOf(false) }
+    var showKawaiiDialog by remember { mutableStateOf(false) }
     var showCustomMinutesDialog by remember { mutableStateOf(false) }
     var customMinutesDraft by remember { mutableStateOf("") }
 
@@ -145,7 +146,10 @@ fun SettingsScreen(
                     lastSakuraTapMark = kotlin.time.TimeSource.Monotonic.markNow()
                     if (sakuraTapCount >= 8) {
                         sakuraTapCount = 0
-                        showSakuraDialog = true
+                        // Квест из восьми быстрых тычков по иконке раздела
+                        // теперь выдаёт «Кавай»: Сакура доступна по умолчанию
+                        // и своего квеста больше не имеет.
+                        showKawaiiDialog = true
                     }
                 }
             ) {
@@ -183,6 +187,15 @@ fun SettingsScreen(
                         )
                     }
                 }
+
+                // Тематические темы: сакура по умолчанию плюс найденные
+                // квестами. Отдельная подстраница с тумблерами.
+                Spacer(modifier = Modifier.height(12.dp))
+                SettingsNavigationRow(
+                    title = "Тематические темы",
+                    subtitle = "Сакура, кавай и найденные квестами",
+                    onClick = onOpenThemedThemes
+                )
             }
 
             // Section: Разделы приложения
@@ -415,14 +428,14 @@ fun SettingsScreen(
         )
     }
 
-    if (showSakuraDialog) {
+    if (showKawaiiDialog) {
         AlertDialog(
-            onDismissRequest = { showSakuraDialog = false },
-            title = { Text("Сакура 🌸", fontWeight = FontWeight.Bold) },
+            onDismissRequest = { showKawaiiDialog = false },
+            title = { Text("Кавай 🎀", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Сакура» в нежных пастельно-розовых тонах!",
+                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Кавай»: полностью анимешная, милая, в пастельно-сиреневых тонах!",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -432,19 +445,19 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Сакура",
+                            text = "Кавай",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         androidx.compose.material3.Switch(
-                            checked = isSakuraTheme,
-                            onCheckedChange = { viewModel.setSakuraTheme(it) }
+                            checked = isKawaiiTheme,
+                            onCheckedChange = { viewModel.setKawaiiTheme(it) }
                         )
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSakuraDialog = false }) {
+                TextButton(onClick = { showKawaiiDialog = false }) {
                     Text("Готово")
                 }
             }

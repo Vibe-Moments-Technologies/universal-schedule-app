@@ -23,6 +23,17 @@ object DateUtils {
         return (0..6).map { monday.plus(DatePeriod(days = it)) }
     }
 
+    /**
+     * Сезон хэллоуинской темы: за 3 дня до 31 октября и через 3 дня после,
+     * то есть 28 октября — 3 ноября включительно, по локальной дате устройства.
+     */
+    fun isHalloweenSeason(date: LocalDate): Boolean {
+        val holiday = LocalDate(date.year, Month.OCTOBER, 31)
+        val seasonStart = holiday.minus(DatePeriod(days = 3))
+        val seasonEnd = holiday.plus(DatePeriod(days = 3))
+        return date in seasonStart..seasonEnd
+    }
+
     fun getWeekInfo(date: LocalDate): SemesterWeekInfo {
         // Источник истины — маркеры недель активного семестра; расчёт ниже —
         // фолбэк, пока семестр не собран или не покрывает дату.

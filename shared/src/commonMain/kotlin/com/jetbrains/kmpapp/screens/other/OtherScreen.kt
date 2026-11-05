@@ -71,7 +71,8 @@ fun OtherScreen(
                         onBack = back,
                         onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) },
                         onOpenScheduleDisplay = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_DISPLAY) },
-                        onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) }
+                        onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) },
+                        onOpenThemedThemes = { viewModel.navigateToSubScreen(OtherSubScreen.THEMED_THEMES) }
                     )
                 }
                 OtherSubScreen.TASK_SETTINGS -> {
@@ -82,6 +83,9 @@ fun OtherScreen(
                 }
                 OtherSubScreen.SCHEDULE_PROGRESS -> {
                     ScheduleProgressSettingsScreen(viewModel = viewModel, onBack = back)
+                }
+                OtherSubScreen.THEMED_THEMES -> {
+                    ThemedThemesScreen(viewModel = viewModel, onBack = back)
                 }
                 OtherSubScreen.ABOUT -> {
                     AboutScreen(
