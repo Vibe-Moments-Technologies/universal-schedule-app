@@ -102,8 +102,8 @@ fun LicensesScreen(
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                 LicenseItem(
-                    title = "Sentry SDK",
-                    description = "MIT License — Functional Software, Inc."
+                    title = "AppMetrica SDK",
+                    description = "MIT License — Yandex LLC."
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                 LicenseItem(

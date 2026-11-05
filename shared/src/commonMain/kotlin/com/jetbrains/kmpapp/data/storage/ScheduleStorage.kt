@@ -1,6 +1,5 @@
 package com.jetbrains.kmpapp.data.storage
 
-import com.jetbrains.kmpapp.data.analytics.AppDiagnostics
 import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.model.DateUtils
@@ -207,9 +206,10 @@ class ScheduleStorage(
     private val _cheatsBlocked = MutableStateFlow(false)
     val cheatsBlocked: StateFlow<Boolean> = _cheatsBlocked.asStateFlow()
 
-    // Диагностика (Sentry) — opt-in из скрытого меню отладки, по умолчанию выключена.
-    private val _diagnosticsEnabled = MutableStateFlow(false)
-    val diagnosticsEnabled: StateFlow<Boolean> = _diagnosticsEnabled.asStateFlow()
+    // Опциональная аналитика (AppMetrica): события использования,
+    // включена по умолчанию, выключается тумблером в настройках.
+    private val _analyticsEnabled = MutableStateFlow(true)
+    val analyticsEnabled: StateFlow<Boolean> = _analyticsEnabled.asStateFlow()
 
     private val _appIcon = MutableStateFlow(AppIconManager.ICON_DEFAULT)
     val appIcon: StateFlow<String> = _appIcon.asStateFlow()
@@ -274,8 +274,7 @@ class ScheduleStorage(
             platformStorage.getString(KEY_HALLOWEEN_DISMISSED_YEAR)?.toIntOrNull()
         _cheatsAgreed.value = nullableFlag(KEY_CHEATS_AGREED)
         _cheatsBlocked.value = loadBooleanFlag(KEY_CHEATS_BLOCKED, false)
-        _diagnosticsEnabled.value = loadBooleanFlag(KEY_DIAGNOSTICS_ENABLED, false)
-        AppDiagnostics.setEnabled(_diagnosticsEnabled.value)
+        _analyticsEnabled.value = loadBooleanFlag(KEY_ANALYTICS_ENABLED, true)
         // Миграция иконки: прошлые «Новая светлая/тёмная» и «Старая»
         // (AppIconClassic) слились в дефолт; неизвестные значения → дефолт.
         _appIcon.value = when (val saved = platformStorage.getString(KEY_APP_ICON)) {
@@ -781,12 +780,12 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
-    /** Диагностика (Sentry): включение запускает SDK, выключение — останавливает. */
-    fun setDiagnosticsEnabled(enabled: Boolean) {
-        _diagnosticsEnabled.value = enabled
-        AppDiagnostics.setEnabled(enabled)
-        scope.launch { platformStorage.saveString(KEY_DIAGNOSTICS_ENABLED, enabled.toString()) }
-    }
+'    /** Тумблер опциональной аналитики (события использования). */
+    fun setAnalyticsEnabled(enabled: Boolean) {
+        _analyticsEnabled.value = enabled
+        com.jetbrains.kmpapp.data.analytics.AppAnalytics.setEventsEnabled(enabled)
+        scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
+    }'
 
     /** Выбор иконки приложения; применяется немедленно (iOS), хранится для UI. */
     fun setAppIcon(name: String) {
@@ -1048,7 +1047,7 @@ class ScheduleStorage(
     fun resetAllData() {
         val cheatsAgreedBefore = _cheatsAgreed.value
         val cheatsBlockedBefore = _cheatsBlocked.value
-        val diagnosticsEnabledBefore = _diagnosticsEnabled.value
+        val analyticsEnabledBefore = _analyticsEnabled.value
         val notificationsEnabledBefore = _notificationsEnabled.value
         val notifyMinutesBeforeBefore = _notifyMinutesBefore.value
         val askBeforeNoteDeleteBefore = _askBeforeNoteDelete.value
@@ -1082,7 +1081,7 @@ class ScheduleStorage(
         _halloweenDismissedYear.value = null
         _cheatsAgreed.value = cheatsAgreedBefore
         _cheatsBlocked.value = cheatsBlockedBefore
-        _diagnosticsEnabled.value = diagnosticsEnabledBefore
+        _analyticsEnabled.value = analyticsEnabledBefore
         _notificationsEnabled.value = notificationsEnabledBefore
         _notificationsTargetId.value = null
         _vpnWarningEnabled.value = true
@@ -1095,7 +1094,7 @@ class ScheduleStorage(
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
-            platformStorage.saveString(KEY_DIAGNOSTICS_ENABLED, diagnosticsEnabledBefore.toString())
+            platformStorage.saveString(KEY_DIAGNOSTICS_ENABLED, analyticsEnabledBefore.toString())
             platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
             platformStorage.remove(KEY_NOTIFICATIONS_TARGET_ID)
             platformStorage.remove(KEY_LESSON_TYPE_COLORS)
@@ -1203,7 +1202,7 @@ class ScheduleStorage(
         private const val KEY_CYBERPUNK_VARIANT = "krasava_cyberpunk_variant"
         private const val KEY_CHEATS_AGREED = "krasava_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "krasava_cheats_blocked"
-        private const val KEY_DIAGNOSTICS_ENABLED = "krasava_diagnostics_enabled"
+        private const val KEY_ANALYTICS_ENABLED = "uschedule_analytics_enabled"
         private const val KEY_APP_ICON = "krasava_app_icon"
         private const val KEY_NOTIFICATIONS_ENABLED = "krasava_notifications_enabled"
         private const val KEY_NOTIFICATIONS_TARGET_ID = "krasava_notifications_target_id"

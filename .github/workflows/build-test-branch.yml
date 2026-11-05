@@ -192,17 +192,6 @@ jobs:
             COMPILER_INDEX_STORE_ENABLE=NO \
             build
 
-      - name: 🕯️ Upload dSYM to Sentry
-        continue-on-error: true
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          curl -sL https://sentry.io/get-cli/ | bash
-          cd iosApp
-          sentry-cli debug-files upload --org l1ratch-dev --project krasava-app \
-            build/Build/Products/Release-iphoneos \
-            ../shared/build/xcode-frameworks
-
       - name: 🔏 Ad-hoc подпись с entitlements (App Group для виджета)
         # Ad-hoc (identity "-") вшивает entitlements в бинарник без сертификата;
         # инструмент переподписи сохранит App Group на .appex. Вложенные первыми.

@@ -26,13 +26,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Krasava">
 
-        <!-- Sentry: отключаем автоинициализацию через SentryInitProvider
-             (краш без DSN в манифесте); SDK стартует вручную из
-             AndroidDiagnostics при включённой диагностике. -->
-        <meta-data
-            android:name="io.sentry.auto-init"
-            android:value="false"/>
-
         <!-- Одна иконка, без алиасов и автоадаптации: набор смены иконки
              по теме оказался хрупким (краш на старте, пропажа иконки),
              а выгода не стоила риска. -->

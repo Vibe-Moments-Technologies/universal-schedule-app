@@ -45,7 +45,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.DebugConfig
-import com.jetbrains.kmpapp.data.analytics.AppDiagnostics
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.widget.AppRuntimeInfo
@@ -62,7 +62,6 @@ fun DebugSettingsScreen(
     val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
     val mapCoordinatePlane by DebugConfig.isMapCoordinatePlaneEnabled.collectAsState()
     val testVersionFeed by DebugConfig.isTestVersionFeed.collectAsState()
-    val diagnosticsEnabled by viewModel.diagnosticsEnabled.collectAsState()
     val storageStats by viewModel.storageStats.collectAsState()
     var showClearCacheDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
@@ -159,22 +158,9 @@ fun DebugSettingsScreen(
             // владельца): диалог открывается даже при подавлении, галочка
             // в нём управляет показом. Отдельная кнопка сброса убрана.
 
-            // Диагностика (Sentry): opt-in для тестировщиков. Выключена —
-            // наружу не уходит ничего вообще. На тестовых каналах (dev/beta/
-            // contrib) сбор обязателен: тумблер заблокирован во включённом состоянии.
-            SectionTitle("Диагностика")
-            DebugSwitchCard(
-                title = "Отправка диагностики",
-                subtitle = if (AppDiagnostics.isForced) {
-                    "Тестовая сборка (канал ${AppVersion.BUILD_CHANNEL}): диагностика включена всегда."
-                } else {
-                    "Краши и ошибки уходят в Sentry. Только для тестировщиков: " +
-                        "включайте на время отладки, данные покидают устройство."
-                },
-                checked = diagnosticsEnabled || AppDiagnostics.isForced,
-                enabled = !AppDiagnostics.isForced,
-                onCheckedChange = viewModel::setDiagnosticsEnabled
-            )
+            // Диагностика не нужна: аналитика AppMetrica включена по умолчанию
+            // в основных настройках, краши собираются всегда.
+
             DebugCard {
                 GlitchText(
                     "Сведения о приложении",
@@ -199,14 +185,17 @@ fun DebugSettingsScreen(
                     fontWeight = FontWeight.SemiBold
                 )
                 GlitchText(
-                    "Отправляет тестовое событие в Sentry. Через минуту оно появится в проекте — " +
-                        "значит, канал диагностики живой.",
+                    "Отправляет тестовое событие в AppMetrica. Через минуту оно появится " +
+                        "в отчёте — значит, канал аналитики живой.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedButton(
                     onClick = {
-                        AppDiagnostics.sendTestEvent()
+                        com.jetbrains.kmpapp.data.analytics.AppAnalytics.logEvent(
+                            "debug_test_event",
+                            mapOf("channel" to AppVersion.BUILD_CHANNEL)
+                        )
                         testEventSent = true
                     },
                     enabled = !testEventSent,

@@ -170,7 +170,7 @@ class ScheduleRepository(
     val cyberpunkVariant: StateFlow<CyberpunkVariant> = storage.cyberpunkVariant
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
-    val diagnosticsEnabled: StateFlow<Boolean> = storage.diagnosticsEnabled
+    val analyticsEnabled: StateFlow<Boolean> = storage.analyticsEnabled
     val appIcon: StateFlow<String> = storage.appIcon
     val notificationsEnabled: StateFlow<Boolean> = storage.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = storage.notifyMinutesBefore
@@ -270,7 +270,7 @@ class ScheduleRepository(
     fun clearHalloweenSeasonDismissal() = storage.clearHalloweenSeasonDismissal()
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
-    fun setDiagnosticsEnabled(enabled: Boolean) = storage.setDiagnosticsEnabled(enabled)
+    fun setAnalyticsEnabled(enabled: Boolean) = storage.setAnalyticsEnabled(enabled)
     fun setAppIcon(name: String) = storage.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = storage.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = storage.setNotifyMinutesBefore(minutes)
