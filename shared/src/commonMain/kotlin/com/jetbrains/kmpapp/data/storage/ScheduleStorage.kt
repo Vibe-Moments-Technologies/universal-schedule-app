@@ -780,12 +780,12 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
-'    /** Тумблер опциональной аналитики (события использования). */
+    /** Тумблер опциональной аналитики (события использования). */
     fun setAnalyticsEnabled(enabled: Boolean) {
         _analyticsEnabled.value = enabled
         com.jetbrains.kmpapp.data.analytics.AppAnalytics.setEventsEnabled(enabled)
         scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
-    }'
+    }
 
     /** Выбор иконки приложения; применяется немедленно (iOS), хранится для UI. */
     fun setAppIcon(name: String) {
@@ -1094,7 +1094,7 @@ class ScheduleStorage(
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
-            platformStorage.saveString(KEY_DIAGNOSTICS_ENABLED, analyticsEnabledBefore.toString())
+            platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
             platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
             platformStorage.remove(KEY_NOTIFICATIONS_TARGET_ID)
             platformStorage.remove(KEY_LESSON_TYPE_COLORS)
