@@ -74,3 +74,12 @@ ROOM_FACTS_TZ.md
 .tmp-ghpages/
 # Mirea Ninja API research - local only
 NINJA_API_NOTES.md
+
+# Мусор PDF-экспериментов (не проекта)
+cells.txt
+chars.json
+chunks.json
+col_*.png
+grid.py
+pdfium_text.txt
+schedule_page1.png
