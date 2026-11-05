@@ -86,7 +86,6 @@ import androidx.compose.runtime.setValue
 private const val WIDGET_PIN_DIALOG_TIMEOUT_MS = 5_000L
 
 /** «По умолчанию» в конфигураторах виджета: цель уведомлений (id < 0). */
-private const val DEFAULT_WIDGET_TARGET_ID = -1
 
 @Composable
 fun SettingsScreen(
@@ -120,9 +119,8 @@ fun SettingsScreen(
     val isKawaiiTheme by viewModel.isKawaiiTheme.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
-    val notificationsTargetId by viewModel.notificationsTargetId.collectAsState()
     val vpnWarningEnabled by viewModel.vpnWarningEnabled.collectAsState()
-    val savedTargets by viewModel.savedTargets.collectAsState()
+    val semester by viewModel.semester.collectAsState()
     val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
     val dockHidden by viewModel.dockHidden.collectAsState()
 
@@ -131,14 +129,12 @@ fun SettingsScreen(
     var showKawaiiDialog by remember { mutableStateOf(false) }
     var showCustomMinutesDialog by remember { mutableStateOf(false) }
     var customMinutesDraft by remember { mutableStateOf("") }
-    var showNotificationsTargetDialog by remember { mutableStateOf(false) }
     var showWidgetPinFailedDialog by remember { mutableStateOf(false) }
     // Предупреждения — диалогами поверх экрана (решение владельца):
     // снекбар внизу не виден за навигационной панелью.
     var showNotificationsDeniedDialog by remember { mutableStateOf(false) }
     // Внутренний конфигуратор виджета (добавление из приложения).
     var showWidgetConfigDialog by remember { mutableStateOf(false) }
-    var widgetConfigTargetId by remember { mutableStateOf<Int?>(null) }
     var widgetConfigShortNames by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -533,39 +529,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    // Выбор цели — всегда доступен (репорт тестера): цель
-                    // уведомлений — ещё и дефолт для виджетов («По умолчанию»
-                    // в их конфигураторах). Прятать её за включённый тумблер
-                    // значило «без уведомлений нельзя менять группу виджета».
-                    val notificationTarget = savedTargets.firstOrNull { it.id == notificationsTargetId }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showNotificationsTargetDialog = true }
-                            .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                GlitchText(
-                                    text = "Расписание для уведомлений",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                GlitchText(
-                                    text = notificationTarget?.fullTitle ?: "Выберите расписание",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Выбрать расписание",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
+                    // Расписание одно — выбор цели уведомлений не нужен:
                         val presets = listOf(5, 10, 15)
                         val isCustom = notifyMinutesBefore !in presets
 
@@ -695,53 +659,21 @@ fun SettingsScreen(
     if (showWidgetConfigDialog) {
         // Внутренний конфигуратор виджета (решение владельца): лаунчеры
         // не показывают системный конфигуратор при добавлении из
-        // приложения — выбираем параметры здесь, закрепление после
+        // приложения — параметры выбираем здесь, закрепление после
         // подтверждения применит их к новому экземпляру молча
         // (ScheduleWidgetApplyActivity из success-callback).
+        // Расписание одно (активный семестр) — выбор цели не нужен.
         AlertDialog(
             onDismissRequest = { showWidgetConfigDialog = false },
             title = { GlitchText("Виджет расписания") },
             text = {
-                if (savedTargets.isEmpty()) {
-                    GlitchText("Сначала добавьте хотя бы одно расписание.")
+                if (semester == null) {
+                    GlitchText("Сначала соберите семестр — виджет показывает его пары.")
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         GlitchText(
-                            text = "Расписание",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        // «По умолчанию» — цель уведомлений, как в системном
-                        // конфигураторе: тот же фолбэк движка виджета.
-                        val configRows = savedTargets
-                        val effectiveId = widgetConfigTargetId
-                            ?: notificationsTargetId
-                            ?: configRows.firstOrNull()?.id
-                        configRows.forEach { target ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { widgetConfigTargetId = target.id }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    GlitchText(
-                                        text = target.fullTitle,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                RadioButton(
-                                    selected = target.id == effectiveId,
-                                    onClick = { widgetConfigTargetId = target.id }
-                                )
-                            }
-                        }
-                        GlitchText(
-                            text = "«По умолчанию» = расписание уведомлений. Виджеты без своего выбора берут его же.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Виджет показывает расписание «${semester.group}».",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
@@ -775,14 +707,9 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showWidgetConfigDialog = false
-                        if (savedTargets.isEmpty()) return@TextButton
-                        // Конкретная цель либо «По умолчанию» (-1 = цель
-                        // уведомлений) — тот же контракт, что у системного
-                        // конфигуратора и ApplyActivity.
-                        val chosen = widgetConfigTargetId
-                            ?: notificationsTargetId
-                            ?: savedTargets.firstOrNull()?.id
-                        val targetId = chosen ?: DEFAULT_WIDGET_TARGET_ID
+                        // Контракт тот же, что у системного конфигуратора
+                        // и ApplyActivity: id единственного семестра.
+                        val targetId = com.jetbrains.kmpapp.data.model.SemesterConfig.TARGET_ID
                         WidgetPinFeedback.setPendingConfig(targetId, widgetConfigShortNames)
                         if (requestScheduleWidgetPin()) {
                             // OEM-запрет может подавить диалог молча: ждём
@@ -833,56 +760,6 @@ fun SettingsScreen(
         )
     }
 
-    if (showNotificationsTargetDialog) {
-        AlertDialog(
-            onDismissRequest = { showNotificationsTargetDialog = false },
-            title = { GlitchText("Расписание для уведомлений") },
-            text = {
-                if (savedTargets.isEmpty()) {
-                    GlitchText("Сначала добавьте хотя бы одно расписание.")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        savedTargets.forEach { target ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.setNotificationsTargetId(target.id)
-                                        showNotificationsTargetDialog = false
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    GlitchText(
-                                        text = target.fullTitle,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    GlitchText(
-                                        text = target.type.displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (target.id == notificationsTargetId) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Выбрано",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showNotificationsTargetDialog = false }) {
-                    GlitchText("Закрыть")
-                }
-            }
-        )
-    }
 
     if (showCustomMinutesDialog) {
         AlertDialog(

@@ -21,7 +21,6 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 import com.jetbrains.kmpapp.data.TaskRepository
-import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 import com.jetbrains.kmpapp.screens.games.GamesViewModel
 import com.jetbrains.kmpapp.screens.notes.NotesViewModel
@@ -63,7 +62,6 @@ val dataModule = module {
     }
     single { com.jetbrains.kmpapp.data.storage.NotesFileStorage() }
     singleOf(::LessonNotesStorage)
-    singleOf(::UnifiedSyncManager)
     singleOf(::VkAvatarLoader)
     singleOf(::ScheduleStorage)
     singleOf(::GamesStorage)

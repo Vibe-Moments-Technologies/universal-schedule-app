@@ -7,7 +7,7 @@ import com.jetbrains.kmpapp.data.model.CalendarExpandState
 import com.jetbrains.kmpapp.data.model.DateUtils
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.model.defaultBells
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,14 +26,9 @@ class ScheduleViewModel(
     private val repository: ScheduleRepository
 ) : ViewModel() {
 
-    val savedTargets: StateFlow<List<ScheduleTarget>> = repository.savedTargets
-    val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
-    val selectedTargetId: Int
-        get() = selectedTarget.value?.id ?: -1
-    val isLoading: StateFlow<Boolean> = repository.isLoading
-    val errorMessage: StateFlow<String?> = repository.errorMessage
-    val activeDiff: StateFlow<com.jetbrains.kmpapp.data.model.ScheduleDiff?> = repository.activeDiff
-    val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
+    /** Активный семестр; null — расписание не собрано (пустое состояние). */
+    val semester: StateFlow<SemesterConfig?> = repository.semester
+    val selectedTargetId: Int get() = SemesterConfig.TARGET_ID
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
@@ -45,7 +40,6 @@ class ScheduleViewModel(
     val vpnWarningEnabled: StateFlow<Boolean> = repository.vpnWarningEnabled
 
     private var lastAutoScrolledDate: LocalDate? = null
-    private var lastAutoScrolledTargetId: Int? = null
 
     /**
      * Позиция скролла дня по дате: живёт в ViewModel, а не в композиции.
@@ -61,61 +55,33 @@ class ScheduleViewModel(
         dayScrollPositions[date] = index
     }
 
-    fun canAutoScroll(date: LocalDate, targetId: Int?): Boolean {
+    fun canAutoScroll(date: LocalDate): Boolean {
         // Автоскролл только один раз на дату: повторные пересборки не должны
         // заново подбрасывать день к текущей паре.
-        return lastAutoScrolledDate != date || lastAutoScrolledTargetId != targetId
+        return lastAutoScrolledDate != date
     }
 
-    fun markAutoScrolled(date: LocalDate, targetId: Int?) {
+    fun markAutoScrolled(date: LocalDate) {
         lastAutoScrolledDate = date
-        lastAutoScrolledTargetId = targetId
     }
 
     fun resetAutoScroll() {
         lastAutoScrolledDate = null
-        lastAutoScrolledTargetId = null
     }
 
     private val _currentMinutes = MutableStateFlow(DateUtils.currentTimeMinutes())
     val currentMinutes: StateFlow<Int> = _currentMinutes.asStateFlow()
 
-    // VPN ломает доступ к серверам МИРЭА (только с IP России) —
-    // обновляется существующим 30-секундным тиком, UI показывает плашку.
-    private val _isVpnActive = MutableStateFlow(com.jetbrains.kmpapp.data.network.detectVpnActive())
-    val isVpnActive: StateFlow<Boolean> = _isVpnActive.asStateFlow()
-
     init {
-        viewModelScope.launch {
-            repository.refreshStatus.collect { status ->
-                if (status != null) {
-                    val delayMs = if (status is com.jetbrains.kmpapp.data.model.RefreshStatus.Error) 3500L else 2500L
-                    kotlinx.coroutines.delay(delayMs)
-                    repository.clearRefreshStatus()
-                }
-            }
-        }
-
         viewModelScope.launch {
             while (true) {
                 // Power-saving tick: pause or sleep longer when in background
-                val isForeground = repository.isLowPowerMode.value.let { lowPower ->
-                    // Update current minute
-                    _currentMinutes.value = DateUtils.currentTimeMinutes()
-                    _isVpnActive.value = com.jetbrains.kmpapp.data.network.detectVpnActive()
-                    val sleepTime = if (lowPower) 60_000L else 30_000L
-                    kotlinx.coroutines.delay(sleepTime)
-                }
+                val lowPower = repository.isLowPowerMode.value
+                _currentMinutes.value = DateUtils.currentTimeMinutes()
+                val sleepTime = if (lowPower) 60_000L else 30_000L
+                kotlinx.coroutines.delay(sleepTime)
             }
         }
-    }
-
-    fun dismissStatusBadge() {
-        repository.clearRefreshStatus()
-    }
-
-    fun dismissDiff() {
-        repository.dismissDiff()
     }
 
     private val _selectedDate = MutableStateFlow(DateUtils.today())
@@ -124,12 +90,12 @@ class ScheduleViewModel(
     private val _selectedLessonForDetail = MutableStateFlow<Lesson?>(null)
     val selectedLessonForDetail: StateFlow<Lesson?> = _selectedLessonForDetail.asStateFlow()
 
-    val datesWithLessons: StateFlow<Set<LocalDate>> = repository.currentLessons
+    val datesWithLessons: StateFlow<Set<LocalDate>> = repository.semesterLessons
         .combine(MutableStateFlow(Unit)) { lessons, _ ->
             lessons.map { it.date }.toSet()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    val dayLessonSummaries: StateFlow<Map<LocalDate, DayLessonSummary>> = repository.currentLessons
+    val dayLessonSummaries: StateFlow<Map<LocalDate, DayLessonSummary>> = repository.semesterLessons
         .combine(MutableStateFlow(Unit)) { lessons, _ ->
             lessons.groupBy { it.date }.mapValues { (_, dayLessons) ->
                 val orderedTypes = dayLessons.groupBy { it.bellNumber }
@@ -140,13 +106,13 @@ class ScheduleViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val daySlots: StateFlow<List<ScheduleSlot>> = combine(
-        repository.currentLessons,
+        repository.semesterLessons,
         _selectedDate,
         repository.showEmptyLessons
     ) { lessons, date, showEmpty -> slotsForDate(lessons, date, showEmpty) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val currentLessons: StateFlow<List<Lesson>> = repository.currentLessons
+    val currentLessons: StateFlow<List<Lesson>> = repository.semesterLessons
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
 
     fun slotsForDate(
@@ -218,26 +184,6 @@ class ScheduleViewModel(
 
     fun selectLessonForDetail(lesson: Lesson?) {
         _selectedLessonForDetail.value = lesson
-        if (lesson != null) {
-        }
-    }
-
-    fun selectTarget(target: ScheduleTarget) {
-        repository.selectTarget(target)
-        resetAutoScroll()
-    }
-
-    fun addAndSelectTarget(target: ScheduleTarget) {
-        repository.addAndSelectTarget(target)
-        resetAutoScroll()
-    }
-
-    fun refresh() {
-        repository.refreshCurrentSchedule()
-    }
-
-    suspend fun search(query: String): List<ScheduleTarget> {
-        return repository.search(query)
     }
 }
 
@@ -246,4 +192,3 @@ data class DayLessonSummary(
 ) {
     val hasLessons: Boolean get() = lessonTypes.isNotEmpty()
 }
-

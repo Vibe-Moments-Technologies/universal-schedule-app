@@ -4,7 +4,7 @@ import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonColor
 import com.jetbrains.kmpapp.data.model.LessonType
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.SemesterConfig
 import androidx.compose.ui.graphics.toArgb
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.TimeZone
@@ -15,13 +15,15 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Контракт данных для виджетов (B1): компактный JSON со ВСЕМИ сохранёнными
- * расписаниями на неделю вперёд. Приложение пишет его в общий контейнер
- * (iOS — App Group), виджет только читает и никогда не ходит в сеть.
+ * Контракт данных для виджетов (B1): компактный JSON с занятиями семестра
+ * на неделю вперёд. Приложение пишет его в общий контейнер (iOS — App
+ * Group), виджет только читает и никогда не ходит в сеть.
  *
- * Почему все расписания, а не одно активное: виджет настраивается пользователем
- * («Изменить виджет» → группа), а список выбора должен быть доступен виджету
- * без обращения к приложению. Параметры хранит система, данные — этот снапшот.
+ * Универсальное приложение: расписание одно (локальный семестр), поэтому и
+ * цель в снапшоте одна — [SemesterConfig.TARGET_ID]. Структура с массивом
+ * targets сохранена дословно из контракта krasava, чтобы iOS-виджет
+ * (Swift-зеркало движка) и Android Glance читали одинаковый JSON без
+ * ветвлений: количество целей — деталь этого приложения, а не формата.
  */
 
 @Serializable
@@ -99,35 +101,31 @@ object WidgetSnapshotBuilder {
     /** На сколько дней вперёд пишем пары. Неделя — с запасом на «Только сегодня». */
     const val DAYS_AHEAD = 7
 
-    /** null — расписаний нет, писать нечего. */
+    /** null — семестра нет, писать нечего. */
     fun build(
-        targets: List<ScheduleTarget>,
-        lessonsByTarget: Map<Int, List<Lesson>>,
-        notificationsTargetId: Int?,
+        config: SemesterConfig?,
+        lessons: List<Lesson>,
         typeColorOverrides: Map<LessonType, LessonColor> = emptyMap()
     ): String? {
-        if (targets.isEmpty()) return null
+        if (config == null) return null
         val today = kotlin.time.Clock.System.now()
             .toLocalDateTime(TimeZone.currentSystemDefault()).date
         val lastDay = today + DatePeriod(days = DAYS_AHEAD - 1)
 
         val payload = WidgetPayload(
             generatedAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
-            defaultTargetId = notificationsTargetId
-                ?.takeIf { id -> targets.any { it.id == id } }
-                ?: targets.first().id,
-            targets = targets.map { target ->
+            defaultTargetId = SemesterConfig.TARGET_ID,
+            targets = listOf(
                 WidgetTarget(
-                    id = target.id,
-                    title = target.targetTitle,
-                    typeName = target.type.displayName,
-                    lessons = lessonsByTarget[target.id]
-                        ?.filter { it.date >= today && it.date <= lastDay }
-                        ?.sortedWith(compareBy({ it.date }, { it.bellNumber }, { it.startTime }))
-                        .orEmpty()
+                    id = SemesterConfig.TARGET_ID,
+                    title = "${config.group} · ${config.semesterNumber} сем.",
+                    typeName = "Семестр",
+                    lessons = lessons
+                        .filter { it.date >= today && it.date <= lastDay }
+                        .sortedWith(compareBy({ it.date }, { it.bellNumber }, { it.startTime }))
                         .map { it.toWidgetLesson() }
                 )
-            },
+            ),
             // Ключ — короткий бейдж типа: именно его виджет получает в
             // WidgetLesson.type и по нему ищет цвет. Несколько типов теоретически
             // могут дать один бейдж — тогда последний перезапишет предыдущий,
@@ -172,9 +170,8 @@ object WidgetBridge {
         val repo = repository ?: return null
         return try {
             WidgetSnapshotBuilder.build(
-                targets = repo.savedTargets.value,
-                lessonsByTarget = repo.cachedLessons.value,
-                notificationsTargetId = repo.notificationsTargetId.value,
+                config = repo.semester.value,
+                lessons = repo.semesterLessons.value,
                 typeColorOverrides = repo.lessonTypeColors.value
             )
         } catch (_: Throwable) {

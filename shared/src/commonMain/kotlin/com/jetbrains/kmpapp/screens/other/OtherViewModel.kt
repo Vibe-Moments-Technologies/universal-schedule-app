@@ -4,11 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.TaskRepository
-import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.model.LessonColor
 import com.jetbrains.kmpapp.data.model.LessonType
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
-import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import com.jetbrains.kmpapp.data.model.StorageStats
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.theme.CyberpunkVariant
@@ -27,13 +24,6 @@ import com.jetbrains.kmpapp.screens.components.AppTab
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-
-enum class TargetSortOrder(val displayName: String) {
-    TITLE_ASC("По названию (А → Я / 0 → 9)"),
-    TITLE_DESC("По названию (Я → А / 9 → 0)"),
-    RECENT("Сначала новые"),
-    OLDEST("Сначала старые")
-}
 
 enum class OtherSubScreen(val depth: Int) {
     ROOT(0),
@@ -118,9 +108,8 @@ class OtherViewModel(
     private val taskRepository: TaskRepository
 ) : ViewModel() {
 
-    val savedTargets: StateFlow<List<ScheduleTarget>> = repository.savedTargets
-    val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
-    val isLoading: StateFlow<Boolean> = repository.isLoading
+    /** Активный семестр; null — расписание не собрано. */
+    val semester: StateFlow<com.jetbrains.kmpapp.data.model.SemesterConfig?> = repository.semester
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
@@ -150,16 +139,13 @@ class OtherViewModel(
     val lessonTypeColors: StateFlow<Map<LessonType, LessonColor>> = repository.lessonTypeColors
 
     /**
-     * Типы занятий, реально присутствующие в ДОБАВЛЕННЫХ расписаниях.
+     * Типы занятий, реально присутствующие в семестре.
      * Больше не используется меню цветов (запрос тестеров: показывать все
-     * типы сразу) — оставлено как источник истины «что есть в расписаниях».
+     * типы сразу) — оставлено как источник истины «что есть в расписании».
      */
-    val presentLessonTypes: StateFlow<List<LessonType>> = repository.cachedLessons
-        .map { cache ->
-            val present = cache.values
-                .asSequence()
-                .flatMap { lessons -> lessons.asSequence().map { it.lessonType } }
-                .toSet()
+    val presentLessonTypes: StateFlow<List<LessonType>> = repository.semesterLessons
+        .map { lessons ->
+            val present = lessons.asSequence().map { it.lessonType }.toSet()
             if (present.isEmpty()) LessonType.entries.toList()
             else LessonType.entries.filter { it in present }
         }
@@ -181,7 +167,6 @@ class OtherViewModel(
     val appIcon: StateFlow<String> = repository.appIcon
     val notificationsEnabled: StateFlow<Boolean> = repository.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = repository.notifyMinutesBefore
-    val notificationsTargetId: StateFlow<Int?> = repository.notificationsTargetId
     val vpnWarningEnabled: StateFlow<Boolean> = repository.vpnWarningEnabled
     val askBeforeNoteDelete: StateFlow<Boolean> = repository.askBeforeNoteDelete
 
@@ -314,62 +299,6 @@ class OtherViewModel(
         }
     }
 
-    // Search, filter, and sort state for ManageSchedulesScreen
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    private val _filterType = MutableStateFlow<ScheduleTargetType?>(null)
-    val filterType: StateFlow<ScheduleTargetType?> = _filterType.asStateFlow()
-
-    private val _sortOrder = MutableStateFlow(TargetSortOrder.TITLE_ASC)
-    val sortOrder: StateFlow<TargetSortOrder> = _sortOrder.asStateFlow()
-
-    val filteredSavedTargets: StateFlow<List<ScheduleTarget>> = combine(
-        repository.savedTargets,
-        _searchQuery,
-        _filterType,
-        _sortOrder
-    ) { list, query, filter, sort ->
-        var result = list
-        if (filter != null) {
-            result = result.filter { it.type == filter }
-        }
-        val trimmed = query.trim()
-        if (trimmed.isNotEmpty()) {
-            result = result.filter {
-                it.targetTitle.contains(trimmed, ignoreCase = true) ||
-                it.fullTitle.contains(trimmed, ignoreCase = true)
-            }
-        }
-        when (sort) {
-            TargetSortOrder.TITLE_ASC -> result.sortedBy { it.targetTitle.lowercase() }
-            TargetSortOrder.TITLE_DESC -> result.sortedByDescending { it.targetTitle.lowercase() }
-            TargetSortOrder.RECENT -> result
-            TargetSortOrder.OLDEST -> result.reversed()
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun setFilterType(type: ScheduleTargetType?) {
-        _filterType.value = type
-    }
-
-    fun setSortOrder(order: TargetSortOrder) {
-        _sortOrder.value = order
-    }
-
-    fun toggleSortDirection() {
-        _sortOrder.value = when (_sortOrder.value) {
-            TargetSortOrder.TITLE_ASC -> TargetSortOrder.TITLE_DESC
-            TargetSortOrder.TITLE_DESC -> TargetSortOrder.TITLE_ASC
-            TargetSortOrder.RECENT -> TargetSortOrder.OLDEST
-            TargetSortOrder.OLDEST -> TargetSortOrder.RECENT
-        }
-    }
-
     fun setThemeMode(mode: ThemeMode) {
         repository.setThemeMode(mode)
     }
@@ -382,16 +311,27 @@ class OtherViewModel(
         repository.setShowAbbreviatedNames(enabled)
     }
 
-    fun selectTarget(target: ScheduleTarget) {
-        repository.selectTarget(target)
+    // ── Семестр: сохранение, удаление, экспорт/импорт ───────────────
+
+    /** Текст ошибки валидации или null — тогда семестр сохранён. */
+    fun saveSemester(config: com.jetbrains.kmpapp.data.model.SemesterConfig): String? {
+        val error = repository.saveSemester(config)
+        _storageStats.value = repository.getStorageStats()
+        return error
     }
 
-    fun removeTarget(targetId: Int) {
-        repository.removeTarget(targetId)
+    fun deleteSemester() {
+        repository.deleteSemester()
+        _storageStats.value = repository.getStorageStats()
     }
 
-    fun refreshSchedule() {
-        repository.refreshCurrentSchedule()
+    fun exportSemesterJson(): String? = repository.exportSemesterJson()
+
+    /** Импорт JSON (ScheduleExport или голый SemesterConfig). Текст ошибки или null. */
+    fun importSemesterJson(text: String): String? {
+        val error = repository.importSemesterJson(text)
+        _storageStats.value = repository.getStorageStats()
+        return error
     }
 
     fun clearCache() {
@@ -402,15 +342,6 @@ class OtherViewModel(
     fun resetAllData() {
         taskRepository.clearAllData()
         repository.resetAllData()
-        DebugConfig.reset()
         _storageStats.value = repository.getStorageStats()
-    }
-
-    suspend fun search(query: String): List<ScheduleTarget> {
-        return repository.search(query)
-    }
-
-    fun addAndSelectTarget(target: ScheduleTarget) {
-        repository.addAndSelectTarget(target)
     }
 }

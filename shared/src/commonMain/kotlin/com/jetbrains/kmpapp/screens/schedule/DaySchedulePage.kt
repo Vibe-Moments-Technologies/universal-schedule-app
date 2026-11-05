@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
-import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -55,18 +54,15 @@ internal fun DaySchedulePage(
     date: LocalDate,
     slots: List<ScheduleSlot>,
     listState: LazyListState,
-    errorMessage: String?,
     currentMinutesState: State<Int>?,
     showLessonProgress: Boolean,
     showEmptyLessonProgress: Boolean,
     showBreakProgress: Boolean,
     showAbbreviatedNames: Boolean,
-    scheduleTargetType: ScheduleTargetType,
     noteTargetId: Int,
     autoScrollToCurrentLesson: Boolean,
     canAutoScroll: (LocalDate) -> Boolean,
     markAutoScrolled: (LocalDate) -> Unit,
-    onRetry: () -> Unit,
     onLessonClick: (Lesson) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -176,11 +172,6 @@ internal fun DaySchedulePage(
                 GlitchText("На этот день пар нет", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 GlitchText("Отличный повод отдохнуть!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    GlitchText(errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, textAlign = TextAlign.Center)
-                    IconButton(onClick = onRetry) { Icon(Icons.Default.Refresh, contentDescription = "Повторить") }
-                }
             }
             ConfettiBurst(trigger = burst)
         }
@@ -218,7 +209,6 @@ internal fun DaySchedulePage(
                     showLessonProgress = showLessonProgress,
                     showEmptyLessonProgress = showEmptyLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
-                    scheduleTargetType = scheduleTargetType,
                     noteTargetId = noteTargetId
                 )
             }

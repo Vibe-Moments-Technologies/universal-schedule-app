@@ -7,7 +7,6 @@ import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.CalendarExpandState
 import com.jetbrains.kmpapp.data.model.LessonColor
 import com.jetbrains.kmpapp.data.model.LessonType
-import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.theme.CyberpunkVariant
@@ -39,14 +38,12 @@ class ScheduleStorage(
         isLenient = true
     }
 
-    private val _savedTargets = MutableStateFlow<List<ScheduleTarget>>(emptyList())
-    val savedTargets: StateFlow<List<ScheduleTarget>> = _savedTargets.asStateFlow()
+    private val _semesterConfig = MutableStateFlow<com.jetbrains.kmpapp.data.model.SemesterConfig?>(null)
+    val semesterConfig: StateFlow<com.jetbrains.kmpapp.data.model.SemesterConfig?> = _semesterConfig.asStateFlow()
 
-    private val _selectedTarget = MutableStateFlow<ScheduleTarget?>(null)
-    val selectedTarget: StateFlow<ScheduleTarget?> = _selectedTarget.asStateFlow()
-
-    private val _cachedLessons = MutableStateFlow<Map<Int, List<Lesson>>>(emptyMap())
-    val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = _cachedLessons.asStateFlow()
+    /** Развёртка активного семестра в занятия по датам. */
+    private val _semesterLessons = MutableStateFlow<List<com.jetbrains.kmpapp.data.model.Lesson>>(emptyList())
+    val semesterLessons: StateFlow<List<com.jetbrains.kmpapp.data.model.Lesson>> = _semesterLessons.asStateFlow()
 
     private val _showEmptyLessons = MutableStateFlow<Boolean>(true)
     val showEmptyLessons: StateFlow<Boolean> = _showEmptyLessons.asStateFlow()
@@ -217,9 +214,6 @@ class ScheduleStorage(
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
-    private val _notificationsTargetId = MutableStateFlow<Int?>(null)
-    val notificationsTargetId: StateFlow<Int?> = _notificationsTargetId.asStateFlow()
-
     private val _vpnWarningEnabled = MutableStateFlow(true)
     val vpnWarningEnabled: StateFlow<Boolean> = _vpnWarningEnabled.asStateFlow()
 
@@ -233,8 +227,6 @@ class ScheduleStorage(
         com.jetbrains.kmpapp.data.model.defaultNotePages()
     )
     val notePages: StateFlow<List<com.jetbrains.kmpapp.data.model.NotePage>> = _notePages.asStateFlow()
-
-    private val lastSyncTimes = mutableMapOf<Int, Long>()
 
     init {
         loadPersistedState()
@@ -284,7 +276,6 @@ class ScheduleStorage(
             else -> AppIconManager.ICON_DEFAULT
         }
         _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
-        _notificationsTargetId.value = platformStorage.getString(KEY_NOTIFICATIONS_TARGET_ID)?.toIntOrNull()
         _vpnWarningEnabled.value = loadBooleanFlag(KEY_VPN_WARNING_ENABLED, true)
         _notifyMinutesBefore.value =
             platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15
@@ -336,48 +327,9 @@ class ScheduleStorage(
         }
     }
 
-    /** Цели, кэш уроков и выбранная цель. Порядок важен: кэш ДО выбранной цели. */
+    /** Семестр: единственная локальная конфигурация расписания. */
     private fun restoreScheduleData() {
-        // Restore saved targets
-        val targets: List<ScheduleTarget> = try {
-            val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
-            if (!targetsJson.isNullOrBlank()) {
-                try { json.decodeFromString(targetsJson) } catch (_: Throwable) { emptyList() }
-            } else {
-                emptyList()
-            }
-        } catch (_: Throwable) {
-            emptyList()
-        }
-        _savedTargets.value = targets
-
-        // IMPORTANT: Restore cached lessons for all targets BEFORE setting selected target!
-        val loadedCache = mutableMapOf<Int, List<Lesson>>()
-        for (target in targets) {
-            try {
-                val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-                if (!lessonsJson.isNullOrBlank()) {
-                    try {
-                        val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
-                        loadedCache[target.id] = lessons
-                    } catch (_: Throwable) {}
-                }
-                val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
-                syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
-            } catch (_: Throwable) {}
-        }
-        _cachedLessons.value = loadedCache
-
-        // Now that cached lessons and timestamps are ready, restore selected target!
-        try {
-            val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
-            val activeId = activeIdStr?.toIntOrNull()
-            val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
-            _selectedTarget.value = selected
-            selected?.let {
-                com.jetbrains.kmpapp.data.model.SemesterWeeks.set(loadWeekMarkers(it.id))
-            }
-        } catch (_: Throwable) {}
+        loadSemester()
     }
 
     private fun loadNotePages() {
@@ -817,12 +769,6 @@ class ScheduleStorage(
         }
         val changed = _notificationsEnabled.value != enabled
         _notificationsEnabled.value = enabled
-        if (enabled) {
-            if (_notificationsTargetId.value == null) {
-                _notificationsTargetId.value = _selectedTarget.value?.id
-                persistNotificationsTargetId(_notificationsTargetId.value)
-            }
-        }
         scope.launch { platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, enabled.toString()) }
         if (changed) {
         }
@@ -833,21 +779,9 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, _notifyMinutesBefore.value.toString()) }
     }
 
-    fun setNotificationsTargetId(targetId: Int?) {
-        _notificationsTargetId.value = targetId
-        persistNotificationsTargetId(targetId)
-    }
-
     fun setVpnWarningEnabled(enabled: Boolean) {
         _vpnWarningEnabled.value = enabled
         scope.launch { platformStorage.saveString(KEY_VPN_WARNING_ENABLED, enabled.toString()) }
-    }
-
-    private fun persistNotificationsTargetId(targetId: Int?) {
-        scope.launch {
-            if (targetId == null) platformStorage.remove(KEY_NOTIFICATIONS_TARGET_ID)
-            else platformStorage.saveString(KEY_NOTIFICATIONS_TARGET_ID, targetId.toString())
-        }
     }
 
     fun setAskBeforeNoteDelete(ask: Boolean) {
@@ -915,133 +849,55 @@ class ScheduleStorage(
 
 
 
-    fun addTarget(target: ScheduleTarget) {
-        val wasNew = _savedTargets.value.none { it.id == target.id }
-        _savedTargets.update { list ->
-            if (list.any { it.id == target.id }) list
-            else list + target
-        }
-        selectTarget(target)
-        if (_notificationsEnabled.value && _notificationsTargetId.value == null) {
-            _notificationsTargetId.value = target.id
-            persistNotificationsTargetId(target.id)
-        }
-        persistTargets()
-        // Аналитика: только тип (GROUP/TEACHER/AUDITORIUM) и количество —
-        // ни id, ни название группы/преподавателя наружу не уходят.
-        if (wasNew) {
-        }
-    }
+    // ── Семестр: единое локальное расписание ───────────────────
 
-    fun removeTarget(targetId: Int) {
-        val removed = _savedTargets.value.firstOrNull { it.id == targetId }
-        _savedTargets.update { list -> list.filter { it.id != targetId } }
-        if (_selectedTarget.value?.id == targetId) {
-            _selectedTarget.value = _savedTargets.value.firstOrNull()
-            persistSelectedTargetId(_selectedTarget.value?.id)
-        }
-        _cachedLessons.update { map -> map - targetId }
-        if (_notificationsTargetId.value == targetId) {
-            val fallback = _savedTargets.value.firstOrNull()?.id
-            _notificationsTargetId.value = fallback
-            persistNotificationsTargetId(fallback)
-        }
-        lastSyncTimes.remove(targetId)
-        platformStorage.remove(KEY_LESSONS_PREFIX + targetId)
-        platformStorage.remove(KEY_LAST_SYNC_PREFIX + targetId)
-        platformStorage.remove(KEY_WEEK_MARKERS_PREFIX + targetId)
-        _selectedTarget.value?.let {
-            com.jetbrains.kmpapp.data.model.SemesterWeeks.set(loadWeekMarkers(it.id))
-        }
-        persistTargets()
-        if (removed != null) {
-        }
-    }
-
-    fun selectTarget(target: ScheduleTarget?) {
-        _selectedTarget.value = target
-        persistSelectedTargetId(target?.id)
-        com.jetbrains.kmpapp.data.model.SemesterWeeks.set(
-            target?.let { loadWeekMarkers(it.id) } ?: emptyList()
-        )
-    }
-
-    fun selectTargetById(targetId: Int) {
-        val target = _savedTargets.value.firstOrNull { it.id == targetId }
-        if (target != null) {
-            selectTarget(target)
-        }
-    }
-
-    fun saveLessons(targetId: Int, lessons: List<Lesson>) {
-        _cachedLessons.update { map ->
-            map + (targetId to lessons)
-        }
+    fun saveSemester(config: com.jetbrains.kmpapp.data.model.SemesterConfig) {
+        applySemester(config)
         scope.launch {
             try {
-                platformStorage.saveString(KEY_LESSONS_PREFIX + targetId, json.encodeToString(lessons))
+                platformStorage.saveString(KEY_SEMESTER_CONFIG, json.encodeToString(config))
             } catch (e: Exception) {
-                println("Failed to persist lessons for $targetId: ${e.message}")
+                println("Failed to persist semester config: ${e.message}")
             }
         }
     }
 
-    /** Маркеры недель из iCal-фида: активная цель определяет нумерацию в UI. */
-    fun saveWeekMarkers(targetId: Int, markers: List<com.jetbrains.kmpapp.data.model.WeekMarker>) {
-        if (markers.isEmpty()) return
+    /** Удаление семестра. Заметки и задачи НЕ трогаем — они стираются вручную. */
+    fun deleteSemester() {
+        applySemester(null)
         scope.launch {
             try {
-                platformStorage.saveString(KEY_WEEK_MARKERS_PREFIX + targetId, json.encodeToString(markers))
+                platformStorage.remove(KEY_SEMESTER_CONFIG)
             } catch (e: Exception) {
-                println("Failed to persist week markers for $targetId: ${e.message}")
-            }
-        }
-        if (_selectedTarget.value?.id == targetId) {
-            com.jetbrains.kmpapp.data.model.SemesterWeeks.set(markers)
-        }
-    }
-
-    fun loadWeekMarkers(targetId: Int): List<com.jetbrains.kmpapp.data.model.WeekMarker> = try {
-        val s = platformStorage.getString(KEY_WEEK_MARKERS_PREFIX + targetId)
-        if (s.isNullOrBlank()) emptyList()
-        else try { json.decodeFromString(s) } catch (_: Throwable) { emptyList() }
-    } catch (_: Throwable) {
-        emptyList()
-    }
-
-    fun getLessons(targetId: Int): List<Lesson>? {
-        return _cachedLessons.value[targetId]
-    }
-
-    fun getLastSyncTime(targetId: Int): Long {
-        val cached = lastSyncTimes[targetId]
-        if (cached != null) return cached
-        val str = platformStorage.getString(KEY_LAST_SYNC_PREFIX + targetId)
-        val time = str?.toLongOrNull() ?: 0L
-        lastSyncTimes[targetId] = time
-        return time
-    }
-
-    fun setLastSyncTime(targetId: Int, time: Long) {
-        lastSyncTimes[targetId] = time
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_LAST_SYNC_PREFIX + targetId, time.toString())
-            } catch (e: Exception) {
-                println("Failed to persist lastSyncTime for $targetId: ${e.message}")
+                println("Failed to remove semester config: ${e.message}")
             }
         }
     }
 
-    fun clearCache() {
-        _cachedLessons.value = emptyMap()
-        lastSyncTimes.clear()
-        for (target in _savedTargets.value) {
-            platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
-            platformStorage.remove(KEY_LAST_SYNC_PREFIX + target.id)
-            platformStorage.remove(KEY_WEEK_MARKERS_PREFIX + target.id)
+    fun exportSemesterJson(): String? =
+        _semesterConfig.value?.let { json.encodeToString(it) }
+
+    /** Пересчёт из сохранённого JSON (кнопка «обновить» экрана данных). */
+    fun reloadSemester() {
+        loadSemester()
+    }
+
+    /** Единая точка применения семестра: config → занятия + маркеры недель. */
+    private fun applySemester(config: com.jetbrains.kmpapp.data.model.SemesterConfig?) {
+        _semesterConfig.value = config
+        _semesterLessons.value = config?.generateLessons() ?: emptyList()
+        com.jetbrains.kmpapp.data.model.SemesterWeeks.set(config?.weekMarkers() ?: emptyList())
+    }
+
+    private fun loadSemester() {
+        val config = try {
+            val s = platformStorage.getString(KEY_SEMESTER_CONFIG)
+            if (s.isNullOrBlank()) null
+            else try { json.decodeFromString<com.jetbrains.kmpapp.data.model.SemesterConfig>(s) } catch (_: Throwable) { null }
+        } catch (_: Throwable) {
+            null
         }
-        com.jetbrains.kmpapp.data.model.SemesterWeeks.set(emptyList())
+        applySemester(config)
     }
 
     fun resetAllData() {
@@ -1051,10 +907,10 @@ class ScheduleStorage(
         val notificationsEnabledBefore = _notificationsEnabled.value
         val notifyMinutesBeforeBefore = _notifyMinutesBefore.value
         val askBeforeNoteDeleteBefore = _askBeforeNoteDelete.value
+        val unlockedThemesBefore = _unlockedThemes.value
+        val cyberpunkVariantBefore = _cyberpunkVariant.value
         platformStorage.clearAll()
-        _savedTargets.value = emptyList()
-        _selectedTarget.value = null
-        _cachedLessons.value = emptyMap()
+        applySemester(null)
         _showEmptyLessons.value = true
         _showLessonProgress.value = true
         _showEmptyLessonProgress.value = true
@@ -1066,7 +922,7 @@ class ScheduleStorage(
         _autoScrollToCurrentLesson.value = true
         _showAbbreviatedNames.value = false
         // Пользовательские цвета занятий — тоже настройка, сбрасывается
-        // вместе с остальными (в исходной ветке этот ключ забывали).
+        // вместе с остальными.
         _lessonTypeColors.value = emptyMap()
         // Вариант палитры Киберпанка — тоже настройка: сброс возвращает новую
         // палитру, которая стоит по умолчанию.
@@ -1083,20 +939,20 @@ class ScheduleStorage(
         _cheatsBlocked.value = cheatsBlockedBefore
         _analyticsEnabled.value = analyticsEnabledBefore
         _notificationsEnabled.value = notificationsEnabledBefore
-        _notificationsTargetId.value = null
         _vpnWarningEnabled.value = true
         _notifyMinutesBefore.value = notifyMinutesBeforeBefore
         _askBeforeNoteDelete.value = askBeforeNoteDeleteBefore
         _notePages.value = com.jetbrains.kmpapp.data.model.defaultNotePages()
-        lastSyncTimes.clear()
-        com.jetbrains.kmpapp.data.model.SemesterWeeks.set(emptyList())
+        // Найденные темы и палитра — прогресс пользователя, сброс данных
+        // квестов не отнимает.
+        _unlockedThemes.value = unlockedThemesBefore
+        _cyberpunkVariant.value = cyberpunkVariantBefore
         scope.launch {
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
             platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
             platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
-            platformStorage.remove(KEY_NOTIFICATIONS_TARGET_ID)
             platformStorage.remove(KEY_LESSON_TYPE_COLORS)
             platformStorage.remove(KEY_CYBERPUNK_VARIANT)
             platformStorage.saveString(KEY_VPN_WARNING_ENABLED, true.toString())
@@ -1104,73 +960,31 @@ class ScheduleStorage(
             platformStorage.saveString(KEY_ASK_BEFORE_NOTE_DELETE, askBeforeNoteDeleteBefore.toString())
             platformStorage.saveString(KEY_DOCK_HIDDEN, false.toString())
             platformStorage.saveString(KEY_NOTES, json.encodeToString(_notePages.value))
+            platformStorage.saveString(KEY_CYBERPUNK_VARIANT, cyberpunkVariantBefore.name)
+            for (overlay in unlockedThemesBefore) {
+                unlockKey(overlay)?.let { platformStorage.saveString(it, "true") }
+            }
         }
     }
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {
         return try {
-            var schedulesBytes = 0L
-            var totalLessons = 0
-            for ((_, lessons) in _cachedLessons.value) {
-                totalLessons += lessons.size
-            }
-            for (target in _savedTargets.value) {
-                val str = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-                if (str != null) {
-                    schedulesBytes += str.encodeToByteArray().size
-                }
-            }
-
-            val targetsStr = platformStorage.getString(KEY_SAVED_TARGETS)
-            val targetsBytes = targetsStr?.encodeToByteArray()?.size?.toLong() ?: 0L
-
-            var settingsBytes = 0L
-            platformStorage.getString(KEY_SELECTED_TARGET_ID)?.let { settingsBytes += it.encodeToByteArray().size }
-            platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)?.let { settingsBytes += it.encodeToByteArray().size }
-            platformStorage.getString(KEY_APP_THEME)?.let { settingsBytes += it.encodeToByteArray().size }
-
-            val total = schedulesBytes + targetsBytes + settingsBytes
+            val configStr = platformStorage.getString(KEY_SEMESTER_CONFIG)
+            val semesterBytes = configStr?.encodeToByteArray()?.size?.toLong() ?: 0L
 
             com.jetbrains.kmpapp.data.model.StorageStats(
-                schedulesSizeBytes = schedulesBytes,
-                schedulesCount = _cachedLessons.value.size,
-                lessonsCount = totalLessons,
-                targetsSizeBytes = targetsBytes,
-                targetsCount = _savedTargets.value.size,
-                settingsSizeBytes = settingsBytes,
-                totalSizeBytes = total
+                schedulesSizeBytes = semesterBytes,
+                schedulesCount = if (_semesterConfig.value != null) 1 else 0,
+                lessonsCount = _semesterLessons.value.size,
+                totalSizeBytes = semesterBytes
             )
         } catch (_: Throwable) {
             com.jetbrains.kmpapp.data.model.StorageStats()
         }
     }
 
-    private fun persistTargets() {
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_SAVED_TARGETS, json.encodeToString(_savedTargets.value))
-            } catch (e: Exception) {
-                println("Failed to persist targets: ${e.message}")
-            }
-        }
-    }
-
-    private fun persistSelectedTargetId(id: Int?) {
-        scope.launch {
-            if (id != null) {
-                platformStorage.saveString(KEY_SELECTED_TARGET_ID, id.toString())
-            } else {
-                platformStorage.remove(KEY_SELECTED_TARGET_ID)
-            }
-        }
-    }
-
     companion object {
-        private const val KEY_SAVED_TARGETS = "krasava_saved_targets"
-        private const val KEY_SELECTED_TARGET_ID = "krasava_selected_target_id"
-        private const val KEY_LESSONS_PREFIX = "krasava_lessons_"
-        private const val KEY_WEEK_MARKERS_PREFIX = "krasava_week_markers_"
-        private const val KEY_LAST_SYNC_PREFIX = "krasava_last_sync_"
+        private const val KEY_SEMESTER_CONFIG = "uschedule_semester_config"
         private const val KEY_SHOW_EMPTY_LESSONS = "krasava_show_empty_lessons"
         private const val KEY_SHOW_LESSON_PROGRESS = "krasava_show_lesson_progress"
         private const val KEY_SHOW_EMPTY_LESSON_PROGRESS = "krasava_show_empty_lesson_progress"
@@ -1205,7 +1019,6 @@ class ScheduleStorage(
         private const val KEY_ANALYTICS_ENABLED = "uschedule_analytics_enabled"
         private const val KEY_APP_ICON = "krasava_app_icon"
         private const val KEY_NOTIFICATIONS_ENABLED = "krasava_notifications_enabled"
-        private const val KEY_NOTIFICATIONS_TARGET_ID = "krasava_notifications_target_id"
         private const val KEY_VPN_WARNING_ENABLED = "krasava_vpn_warning_enabled"
         private const val KEY_NOTIFY_MINUTES_BEFORE = "krasava_notify_minutes_before"
         private const val KEY_ASK_BEFORE_NOTE_DELETE = "krasava_ask_before_note_delete"

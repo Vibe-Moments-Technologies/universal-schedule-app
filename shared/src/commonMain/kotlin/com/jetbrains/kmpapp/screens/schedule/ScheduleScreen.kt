@@ -18,10 +18,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,19 +26,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.VpnKey
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Surface
 import com.jetbrains.kmpapp.data.model.CalendarExpandState
 import com.jetbrains.kmpapp.data.model.Lesson
-import com.jetbrains.kmpapp.data.model.RefreshStatus
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -105,15 +95,10 @@ private fun ScheduleMainContent(
     modifier: Modifier = Modifier,
     onOpenOther: (() -> Unit)? = null
 ) {
-    val savedTargets by viewModel.savedTargets.collectAsState()
-    val selectedTarget by viewModel.selectedTarget.collectAsState()
+    val semester by viewModel.semester.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val currentLessons by viewModel.currentLessons.collectAsState()
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val activeDiff by viewModel.activeDiff.collectAsState()
-    val refreshStatus by viewModel.refreshStatus.collectAsState()
     val dayLessonSummaries by viewModel.dayLessonSummaries.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
@@ -127,19 +112,10 @@ private fun ScheduleMainContent(
     // всё дерево расписания. State уходит вниз и читается только в карточках
     // «сегодня» (см. LessonCard).
     val currentMinutesState = viewModel.currentMinutes.collectAsState()
-    val isVpnActive by viewModel.isVpnActive.collectAsState()
-    val vpnWarningEnabled by viewModel.vpnWarningEnabled.collectAsState()
-    var isVpnBannerDismissed by remember(isVpnActive, vpnWarningEnabled) { mutableStateOf(false) }
-
-    var showAddSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Месячный календарь: по тапу на «Сентябрь 2026 • N неделя» или долгому
     // нажатию на кружок дня в топбаре (когда лента свёрнута).
     var showMonthPicker by remember { mutableStateOf(false) }
-
-    var showDiffSheet by remember { mutableStateOf(false) }
-    val diffSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val scope = rememberCoroutineScope()
     val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
@@ -174,14 +150,8 @@ private fun ScheduleMainContent(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ScheduleTopBar(
-                selectedTarget = selectedTarget,
-                savedTargets = savedTargets,
-                isLoading = isLoading,
-                activeDiff = activeDiff,
-                onSelectTarget = { viewModel.selectTarget(it) },
-                onDiffClick = { showDiffSheet = true },
-                onAddClick = { showAddSheet = true },
-                calendarBadgeDay = if (selectedTarget != null && calendarCollapsed) selectedDate.day else null,
+                semester = semester,
+                calendarBadgeDay = if (semester != null && calendarCollapsed) selectedDate.day else null,
                 onCalendarBadgeClick = { viewModel.setCalendarCollapsed(false) },
                 onCalendarBadgeLongClick = { showMonthPicker = true },
                 onOpenOtherClick = onOpenOther
@@ -197,8 +167,8 @@ private fun ScheduleMainContent(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-            if (selectedTarget == null) {
-                // No schedule selected yet
+            if (semester == null) {
+                // Семестр ещё не собран
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -217,27 +187,17 @@ private fun ScheduleMainContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         GlitchText(
-                            text = "Расписание не выбрано",
+                            text = "Расписание не собрано",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         GlitchText(
-                            text = "Добавьте группу, преподавателя или аудиторию, чтобы просматривать расписание занятий",
+                            text = "Соберите семестр в конфигураторе: вуз, группа, звонки и недельный шаблон занятий — расписание живёт на устройстве, без интернета",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = { showAddSheet = true },
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.size(8.dp))
-                            GlitchText("Добавить расписание", fontWeight = FontWeight.Bold)
-                        }
                     }
                 }
             } else {
@@ -271,149 +231,45 @@ private fun ScheduleMainContent(
                     )
                 }
 
-                // Серверы МИРЭА доступны только с IP России: при включённом
-                // VPN расписание не обновится — предупреждаем заранее.
-                if (isVpnActive && vpnWarningEnabled && !isVpnBannerDismissed) {
-                    LaunchedEffect(Unit) {
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFFFE0B2),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VpnKey,
-                                contentDescription = null,
-                                tint = Color(0xFF8A4B08),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            GlitchText(
-                                text = "Включён VPN — расписание может не обновиться",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF5D3508),
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = { isVpnBannerDismissed = true },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Скрыть предупреждение",
-                                    tint = Color(0xFF8A4B08),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                PullToRefreshBox(
-                    isRefreshing = isLoading,
-                    onRefresh = { viewModel.refresh() },
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier.fillMaxSize()
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        val pageDate = today.plus(DatePeriod(days = page - basePage))
-                        val pageSlots = viewModel.slotsForDate(pageDate, currentLessons, showEmptyLessons)
-                        key(pageDate) {
-                            // Стартуем с сохранённой позиции дня и пишем её
-                            // обратно: открытие подстраницы больше не сбрасывает
-                            // день к первой паре.
-                            val pageListState = remember(pageDate) {
-                                LazyListState(
-                                    firstVisibleItemIndex = viewModel.scrollPositionFor(pageDate)
-                                )
-                            }
-                            LaunchedEffect(pageListState) {
-                                snapshotFlow { pageListState.firstVisibleItemIndex }
-                                    .collect { viewModel.saveScrollPosition(pageDate, it) }
-                            }
-                            DaySchedulePage(
-                                date = pageDate,
-                                slots = pageSlots,
-                                listState = pageListState,
-                                errorMessage = errorMessage,
-                                currentMinutesState = currentMinutesState,
-                                showLessonProgress = showLessonProgress,
-                                showEmptyLessonProgress = showEmptyLessonProgress,
-                                showBreakProgress = showBreakProgress,
-                                showAbbreviatedNames = showAbbreviatedNames,
-                                scheduleTargetType = selectedTarget?.type ?: com.jetbrains.kmpapp.data.model.ScheduleTargetType.GROUP,
-                                noteTargetId = selectedTarget?.id ?: -1,
-                                autoScrollToCurrentLesson = autoScrollToCurrentLesson,
-                                canAutoScroll = { viewModel.canAutoScroll(it, selectedTarget?.id) },
-                                markAutoScrolled = { viewModel.markAutoScrolled(it, selectedTarget?.id) },
-                                onRetry = { viewModel.refresh() },
-                                onLessonClick = { viewModel.selectLessonForDetail(it) },
-                                modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val pageDate = today.plus(DatePeriod(days = page - basePage))
+                    val pageSlots = viewModel.slotsForDate(pageDate, currentLessons, showEmptyLessons)
+                    key(pageDate) {
+                        // Стартуем с сохранённой позиции дня и пишем её
+                        // обратно: открытие подстраницы больше не сбрасывает
+                        // день к первой паре.
+                        val pageListState = remember(pageDate) {
+                            LazyListState(
+                                firstVisibleItemIndex = viewModel.scrollPositionFor(pageDate)
                             )
                         }
+                        LaunchedEffect(pageListState) {
+                            snapshotFlow { pageListState.firstVisibleItemIndex }
+                                .collect { viewModel.saveScrollPosition(pageDate, it) }
+                        }
+                        DaySchedulePage(
+                            date = pageDate,
+                            slots = pageSlots,
+                            listState = pageListState,
+                            currentMinutesState = currentMinutesState,
+                            showLessonProgress = showLessonProgress,
+                            showEmptyLessonProgress = showEmptyLessonProgress,
+                            showBreakProgress = showBreakProgress,
+                            showAbbreviatedNames = showAbbreviatedNames,
+                            noteTargetId = com.jetbrains.kmpapp.data.model.SemesterConfig.TARGET_ID,
+                            autoScrollToCurrentLesson = autoScrollToCurrentLesson,
+                            canAutoScroll = { viewModel.canAutoScroll(it) },
+                            markAutoScrolled = { viewModel.markAutoScrolled(it) },
+                            onLessonClick = { viewModel.selectLessonForDetail(it) },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
         }
-
-        // Floating update badge overlay (appears OVER the calendar and cards without shifting anything)
-        androidx.compose.animation.AnimatedVisibility(
-            visible = refreshStatus != null,
-            enter = slideInVertically { -it } + androidx.compose.animation.fadeIn(),
-            exit = slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 10.dp)
-        ) {
-                val status = refreshStatus
-                if (status != null) {
-                    val isSuccess = status is RefreshStatus.Success
-                    val bgColor = if (isSuccess) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                    val textColor = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                    val text = when (status) {
-                        is RefreshStatus.Success -> status.message
-                        is RefreshStatus.Error -> "Ошибка (${status.code.code}): ${status.code.shortTitle}"
-                    }
-                    val icon = if (isSuccess) Icons.Default.Check else Icons.Default.Warning
-
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = bgColor,
-                        shadowElevation = 8.dp,
-                        tonalElevation = 6.dp,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .clickable { viewModel.dismissStatusBadge() }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            GlitchText(
-                                text = text,
-                                fontSize = 12.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = textColor
-                            )
-                        }
-                    }
-                }
-            }
 
         // Месячный календарь — оверлей поверх всего экрана (НЕ Dialog:
         // диалоговые окна Compose на iOS падали при смене месяца).
@@ -426,38 +282,5 @@ private fun ScheduleMainContent(
             )
         }
         }
-    }
-
-    if (showAddSheet) {
-        AddScheduleBottomSheet(
-            sheetState = sheetState,
-            onDismiss = {
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
-                    showAddSheet = false
-                }
-            },
-            onSearch = { viewModel.search(it) },
-            onSelectTarget = { target ->
-                viewModel.addAndSelectTarget(target)
-            }
-        )
-    }
-
-    if (showDiffSheet && activeDiff != null) {
-        ScheduleDiffBottomSheet(
-            diff = activeDiff!!,
-            sheetState = diffSheetState,
-            onDismiss = {
-                scope.launch { diffSheetState.hide() }.invokeOnCompletion {
-                    showDiffSheet = false
-                }
-            },
-            onAccept = {
-                viewModel.dismissDiff()
-                scope.launch { diffSheetState.hide() }.invokeOnCompletion {
-                    showDiffSheet = false
-                }
-            }
-        )
     }
 }

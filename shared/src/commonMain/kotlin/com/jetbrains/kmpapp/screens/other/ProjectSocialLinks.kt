@@ -34,21 +34,16 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jetbrains.kmpapp.data.config.RemoteConfigLoader
 import kotlinx.coroutines.delay
-import org.koin.compose.koinInject
-import androidx.compose.runtime.collectAsState
 
 /**
  * Блок-ссылки на соцсети проекта: квадратные кнопки-иконки без подписей.
- * Ссылки берутся из удалённого конфига (config.json на gh-pages).
+ * Ссылки зашиты константами: у локального приложения нет сервера конфигов.
  * Пустая ссылка → тост «скоро».
  */
 @Composable
 internal fun ProjectSocialLinks() {
     val uriHandler = LocalUriHandler.current
-    val configLoader: RemoteConfigLoader = koinInject()
-    val config by configLoader.config.collectAsState()
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -61,7 +56,7 @@ internal fun ProjectSocialLinks() {
                 tint = MaterialTheme.colorScheme.onSurface,
                 contentDescription = "GitHub",
                 onClick = {
-                    uriHandler.openUri(config.socialLinks.github)
+                    uriHandler.openUri(SOCIAL_GITHUB)
                 },
                 modifier = Modifier.weight(1f)
             )
@@ -70,7 +65,7 @@ internal fun ProjectSocialLinks() {
                 tint = Color(0xFF29A9EB),
                 contentDescription = "Telegram",
                 onClick = {
-                    uriHandler.openUri(config.socialLinks.telegram)
+                    uriHandler.openUri(SOCIAL_TELEGRAM)
                 },
                 modifier = Modifier.weight(1f)
             )
@@ -79,9 +74,7 @@ internal fun ProjectSocialLinks() {
                 tint = Color(0xFFF15F2F),
                 contentDescription = "Boosty",
                 onClick = {
-                    val url = config.socialLinks.boosty
-                    if (url.isNotBlank()) uriHandler.openUri(url)
-                    else toastMessage = "Поддержка разработчиков скоро появится"
+                    uriHandler.openUri(SOCIAL_BOOSTY)
                 },
                 modifier = Modifier.weight(1f)
             )
@@ -93,6 +86,10 @@ internal fun ProjectSocialLinks() {
         )
     }
 }
+
+private const val SOCIAL_GITHUB = "https://github.com/Vibe-Moments-Technologies/universal-schedule-app"
+private const val SOCIAL_TELEGRAM = "https://t.me/l1ratch"
+private const val SOCIAL_BOOSTY = "https://boosty.to/vibe.moments.technologies"
 
 /**
  * Лёгкий тост в теме приложения: fade-анимация, автоскрытие ~2.5с, тап

@@ -208,7 +208,7 @@ private fun OtherMainContent(
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val savedTargets by viewModel.savedTargets.collectAsState()
+    val semester by viewModel.semester.collectAsState()
     val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
     val updateResult by viewModel.updateResult.collectAsState()
     val dockTabs by viewModel.dockTabs.collectAsState()
@@ -306,9 +306,10 @@ private fun OtherMainContent(
             }
             // 1. My schedules card
             OtherNavCard(
-                title = "Мои расписания",
-                subtitle = if (savedTargets.isEmpty()) "Нет сохранённых расписаний"
-                else "Сохранено: ${savedTargets.size}",
+                title = "Моё расписание",
+                subtitle = semester?.let {
+                    "${it.university} · ${it.group}"
+                } ?: "Семестр не собран",
                 icon = Icons.AutoMirrored.Filled.EventNote,
                 onClick = { onNavigate(OtherSubScreen.MANAGE_SCHEDULES) }
             )

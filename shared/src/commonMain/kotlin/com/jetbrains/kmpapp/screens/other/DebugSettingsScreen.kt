@@ -59,8 +59,6 @@ fun DebugSettingsScreen(
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
-    val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
-    val mapCoordinatePlane by DebugConfig.isMapCoordinatePlaneEnabled.collectAsState()
     val testVersionFeed by DebugConfig.isTestVersionFeed.collectAsState()
     val storageStats by viewModel.storageStats.collectAsState()
     var showClearCacheDialog by remember { mutableStateOf(false) }
@@ -109,30 +107,6 @@ fun DebugSettingsScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SectionTitle("Режимы")
-            DebugSwitchCard(
-                title = "Имитировать оффлайн",
-                subtitle = "Использовать сохранённые данные без сети",
-                checked = simulateOffline,
-                onCheckedChange = DebugConfig::setOfflineSimulated
-            )
-            DebugSwitchCard(
-                title = "Координатная плоскость на картах",
-                subtitle = "Сетка координат поверх карт для отладки геометрии",
-                checked = mapCoordinatePlane,
-                onCheckedChange = DebugConfig::setMapCoordinatePlaneEnabled
-            )
-            // Карты МП-1 (репорт владельца): по умолчанию — НОВАЯ съёмка
-            // (инверсия исходного тумблера); тумблер возвращает СТАРУЮ.
-            // Персистентен; обе версии карт лежат в ресурсах.
-            val oldMp1Map by DebugConfig.isOldMp1MapEnabled.collectAsState()
-            DebugSwitchCard(
-                title = "Старая съёмка МП-1",
-                subtitle = "Прежние карты Малой Пироговской (подвал -1). Выключено — новая съёмка (этажи 0–5, «0» — бывший подвал).",
-                checked = oldMp1Map,
-                onCheckedChange = DebugConfig::setOldMp1MapEnabled
-            )
-
             // Тестовый фид версионирования (репорт владельца): проверка
             // обновлений читает version-test.json на gh-pages — версии
             // меняются в файле как угодно, смотрим поведение приложения
