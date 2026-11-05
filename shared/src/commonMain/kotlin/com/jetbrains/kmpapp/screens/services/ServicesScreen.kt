@@ -40,15 +40,10 @@ import com.jetbrains.kmpapp.screens.components.LayeredNavHost
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.halloweenEmoji
 import com.jetbrains.kmpapp.screens.components.isService
-import com.jetbrains.kmpapp.screens.compare.CompareScheduleScreen
-import com.jetbrains.kmpapp.screens.compare.CompareScheduleViewModel
-import com.jetbrains.kmpapp.screens.map.MapScreen
 import com.jetbrains.kmpapp.screens.notes.NotesScreen
 import com.jetbrains.kmpapp.screens.notes.NotesViewModel
 import com.jetbrains.kmpapp.screens.games.GamesScreen
 import com.jetbrains.kmpapp.screens.games.GamesViewModel
-import com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen
-import com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,8 +54,7 @@ import androidx.lifecycle.ViewModel
 /**
  * Раздел «Сервисы»: страница-концентратор страниц, не добавленных на панель.
  * Сервис открывается поверх списка (послойная навигация): назад — свайп,
- * системная кнопка или стрелка на иконке «Сервисы» на панели. Карта — без
- * свайпа (жестами управляет сама).
+ * системная кнопка или стрелка на иконке «Сервисы» на панели.
  */
 class ServicesViewModel : ViewModel() {
     private val _activeService = MutableStateFlow<AppTab?>(null)
@@ -76,17 +70,9 @@ class ServicesViewModel : ViewModel() {
 }
 
 private val SERVICE_DESCRIPTIONS = mapOf(
-    AppTab.FREE_ROOMS to "Поиск свободных аудиторий по корпусу и звонку",
     AppTab.TASKS to "Дедлайны и задания по предметам",
-    AppTab.MAP to "Интерактивные схемы этажей корпусов",
     AppTab.NOTES to "Заметки с цветными полями, хранятся на устройстве",
-    AppTab.COMPARE to "Сравнение расписаний нескольких групп",
     AppTab.GAMES to "Раздел игр: сейчас внутри «Сапер», новые игры в будущих обновлениях"
-)
-
-// Развёрнутые имена только на этой странице; в доке и блоке — краткие.
-private val SERVICE_DISPLAY_TITLES = mapOf(
-    AppTab.FREE_ROOMS to "Свободные аудитории"
 )
 
 @Composable
@@ -94,8 +80,6 @@ fun ServicesScreen(
     viewModel: ServicesViewModel,
     dockTabs: List<AppTab>,
     tasksViewModel: TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
-    freeRoomsViewModel: FreeRoomsViewModel = org.koin.compose.viewmodel.koinViewModel(),
-    compareViewModel: CompareScheduleViewModel = org.koin.compose.viewmodel.koinViewModel(),
     notesViewModel: NotesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     gamesViewModel: GamesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     modifier: Modifier = Modifier
@@ -112,8 +96,6 @@ fun ServicesScreen(
         onBackToParent = { viewModel.closeService() },
         // Возврат из другой вкладки с открытым сервисом — показать сразу.
         initiallyRevealed = remember { activeService != null },
-        // Карта управляет горизонтальными жестами сама.
-        swipeGestureEnabled = { it != AppTab.MAP },
         rootContent = {
             Column(
                 modifier = Modifier
@@ -149,25 +131,13 @@ fun ServicesScreen(
         },
         screenContent = { service, back ->
             when (service as AppTab) {
-                AppTab.FREE_ROOMS -> {
-                    PlatformBackHandler(onBack = back)
-                    FreeRoomsScreen(viewModel = freeRoomsViewModel)
-                }
                 AppTab.TASKS -> {
                     PlatformBackHandler(onBack = back)
                     TasksScreen(viewModel = tasksViewModel)
                 }
-                AppTab.MAP -> {
-                    PlatformBackHandler(onBack = back)
-                    MapScreen()
-                }
                 AppTab.NOTES -> {
                     PlatformBackHandler(onBack = back)
                     NotesScreen(viewModel = notesViewModel)
-                }
-                AppTab.COMPARE -> {
-                    PlatformBackHandler(onBack = back)
-                    CompareScheduleScreen(viewModel = compareViewModel)
                 }
                 AppTab.GAMES -> {
                     PlatformBackHandler(onBack = back)

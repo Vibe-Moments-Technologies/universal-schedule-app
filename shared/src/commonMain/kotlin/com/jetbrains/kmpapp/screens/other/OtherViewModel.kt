@@ -56,18 +56,14 @@ enum class OtherSubScreen(val depth: Int) {
     // Настройки игр: «Сапер» и «Тетрис»
     SAPER_SETTINGS(2),
     TETRIS_SETTINGS(2),
-    RESOURCES(1),
     ABOUT(1),
     TEAM(2),
     LICENSES(2),
     DEBUG_SETTINGS(2),
     EXPERIMENTAL_SETTINGS(3),
     // Сервисы, открытые через блок «Сервисы» на главной «Другого».
-    SERVICE_ROOMS(1),
     SERVICE_TASKS(1),
-    SERVICE_MAP(1),
     SERVICE_NOTES(1),
-    SERVICE_COMPARE(1),
     SERVICE_GAMES(1)
 }
 
@@ -87,17 +83,13 @@ private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.SERVICE_NOTES_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SAPER_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.TETRIS_SETTINGS to OtherSubScreen.SETTINGS,
-    OtherSubScreen.RESOURCES to OtherSubScreen.ROOT,
     OtherSubScreen.ABOUT to OtherSubScreen.ROOT,
     OtherSubScreen.TEAM to OtherSubScreen.ABOUT,
     OtherSubScreen.LICENSES to OtherSubScreen.ABOUT,
     OtherSubScreen.DEBUG_SETTINGS to OtherSubScreen.ABOUT,
     OtherSubScreen.EXPERIMENTAL_SETTINGS to OtherSubScreen.DEBUG_SETTINGS,
-    OtherSubScreen.SERVICE_ROOMS to OtherSubScreen.ROOT,
     OtherSubScreen.SERVICE_TASKS to OtherSubScreen.ROOT,
-    OtherSubScreen.SERVICE_MAP to OtherSubScreen.ROOT,
     OtherSubScreen.SERVICE_NOTES to OtherSubScreen.ROOT,
-    OtherSubScreen.SERVICE_COMPARE to OtherSubScreen.ROOT,
     OtherSubScreen.SERVICE_GAMES to OtherSubScreen.ROOT
 )
 
@@ -106,11 +98,8 @@ fun OtherSubScreen.parent(): OtherSubScreen? =
 
 /** Сервисная подстраница для вкладки дока (null — не сервис). */
 fun AppTab.toServiceSubScreen(): OtherSubScreen? = when (this) {
-    AppTab.FREE_ROOMS -> OtherSubScreen.SERVICE_ROOMS
     AppTab.TASKS -> OtherSubScreen.SERVICE_TASKS
-    AppTab.MAP -> OtherSubScreen.SERVICE_MAP
     AppTab.NOTES -> OtherSubScreen.SERVICE_NOTES
-    AppTab.COMPARE -> OtherSubScreen.SERVICE_COMPARE
     AppTab.GAMES -> OtherSubScreen.SERVICE_GAMES
     else -> null
 }
@@ -118,11 +107,8 @@ fun AppTab.toServiceSubScreen(): OtherSubScreen? = when (this) {
 /** Открыт ли в «Другом» сервис (для стрелки «назад» в доке). */
 val OtherSubScreen.isServiceScreen: Boolean
     get() = this in setOf(
-        OtherSubScreen.SERVICE_ROOMS,
         OtherSubScreen.SERVICE_TASKS,
-        OtherSubScreen.SERVICE_MAP,
         OtherSubScreen.SERVICE_NOTES,
-        OtherSubScreen.SERVICE_COMPARE,
         OtherSubScreen.SERVICE_GAMES
     )
 

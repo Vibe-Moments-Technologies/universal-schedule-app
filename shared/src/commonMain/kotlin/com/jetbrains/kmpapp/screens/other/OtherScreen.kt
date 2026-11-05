@@ -63,8 +63,6 @@ import com.jetbrains.kmpapp.screens.games.GamesViewModel
 fun OtherScreen(
     viewModel: OtherViewModel,
     tasksViewModel: com.jetbrains.kmpapp.screens.tasks.TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
-    freeRoomsViewModel: com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel = org.koin.compose.viewmodel.koinViewModel(),
-    compareViewModel: com.jetbrains.kmpapp.screens.compare.CompareScheduleViewModel = org.koin.compose.viewmodel.koinViewModel(),
     notesViewModel: com.jetbrains.kmpapp.screens.notes.NotesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     gamesViewModel: GamesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     onNavigateToTab: (AppTab) -> Unit = {},
@@ -92,8 +90,6 @@ fun OtherScreen(
         },
         // Возврат из другой вкладки с открытой подстраницей — показать сразу.
         initiallyRevealed = remember { activeSubScreen != OtherSubScreen.ROOT },
-        // Карта управляет горизонтальными жестами сама — свайп-назад не вешаем.
-        swipeGestureEnabled = { it != OtherSubScreen.SERVICE_MAP },
         rootContent = {
             OtherMainContent(
                 viewModel = viewModel,
@@ -162,8 +158,17 @@ fun OtherScreen(
                 OtherSubScreen.TETRIS_SETTINGS -> {
                     TetrisSettingsScreen(viewModel = gamesViewModel, onBack = back)
                 }
-                OtherSubScreen.RESOURCES -> {
-                    ResourcesScreen(onBack = back)
+                OtherSubScreen.SERVICE_TASKS -> {
+                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
+                    com.jetbrains.kmpapp.screens.tasks.TasksScreen(viewModel = tasksViewModel)
+                }
+                OtherSubScreen.SERVICE_NOTES -> {
+                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
+                    com.jetbrains.kmpapp.screens.notes.NotesScreen(viewModel = notesViewModel)
+                }
+                OtherSubScreen.SERVICE_GAMES -> {
+                    PlatformBackHandler(onBack = back)
+                    GamesScreen(viewModel = gamesViewModel)
                 }
                 OtherSubScreen.ABOUT -> {
                     AboutScreen(
@@ -188,33 +193,6 @@ fun OtherScreen(
                 }
                 OtherSubScreen.EXPERIMENTAL_SETTINGS -> {
                     ExperimentalSettingsScreen(viewModel = viewModel, onBack = back)
-                }
-                // Сервисы из блока «Сервисы»: те же экраны, что и вкладками,
-                // но подстраницами «Другого» — назад: свайп, система и
-                // стрелка на иконке «Другое» в доке.
-                OtherSubScreen.SERVICE_ROOMS -> {
-                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
-                    com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen(viewModel = freeRoomsViewModel)
-                }
-                OtherSubScreen.SERVICE_TASKS -> {
-                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
-                    com.jetbrains.kmpapp.screens.tasks.TasksScreen(viewModel = tasksViewModel)
-                }
-                OtherSubScreen.SERVICE_MAP -> {
-                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
-                    com.jetbrains.kmpapp.screens.map.MapScreen(onBack = back)
-                }
-                OtherSubScreen.SERVICE_NOTES -> {
-                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
-                    com.jetbrains.kmpapp.screens.notes.NotesScreen(viewModel = notesViewModel)
-                }
-                OtherSubScreen.SERVICE_COMPARE -> {
-                    com.jetbrains.kmpapp.screens.components.PlatformBackHandler(onBack = back)
-                    com.jetbrains.kmpapp.screens.compare.CompareScheduleScreen(viewModel = compareViewModel)
-                }
-                OtherSubScreen.SERVICE_GAMES -> {
-                    PlatformBackHandler(onBack = back)
-                    GamesScreen(viewModel = gamesViewModel)
                 }
             }
         },
@@ -326,15 +304,7 @@ private fun OtherMainContent(
                     onNavigateToTab = openHiddenTab
                 )
             }
-            // 1. University resources card
-            OtherNavCard(
-                title = "Ресурсы университета",
-                subtitle = "Личный кабинет, СДО, Пульс и сервисы",
-                icon = Icons.Default.School,
-                onClick = { onNavigate(OtherSubScreen.RESOURCES) }
-            )
-
-            // 2. My schedules card
+            // 1. My schedules card
             OtherNavCard(
                 title = "Мои расписания",
                 subtitle = if (savedTargets.isEmpty()) "Нет сохранённых расписаний"
@@ -343,7 +313,7 @@ private fun OtherMainContent(
                 onClick = { onNavigate(OtherSubScreen.MANAGE_SCHEDULES) }
             )
 
-            // 3. Settings card
+            // 2. Settings card
             OtherNavCard(
                 title = "Настройки",
                 subtitle = "Оформление, тема, навигация",

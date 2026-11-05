@@ -66,11 +66,8 @@ enum class AppTab(
     val isFixed: Boolean = false
 ) {
     SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange, isFixed = true),
-    FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
-    MAP("Карта", Icons.Filled.Map, Icons.Filled.Map, isFixed = false),
     NOTES("Конспекты", Icons.Filled.EditNote, Icons.Outlined.EditNote, isFixed = false),
-    COMPARE("Сравнение", Icons.Filled.CompareArrows, Icons.Outlined.CompareArrows, isFixed = false),
     GAMES("Игры", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports, isFixed = false),
     // Раздел-концентратор сервисов: сам не экран приложения, а «папка» —
     // по умолчанию скрыт, добавляется в док как обычная вкладка.

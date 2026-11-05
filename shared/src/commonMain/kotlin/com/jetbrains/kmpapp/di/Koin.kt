@@ -2,8 +2,6 @@ package com.jetbrains.kmpapp.di
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.VkAvatarLoader
-import com.jetbrains.kmpapp.data.api.MireaScheduleApi
-import com.jetbrains.kmpapp.data.config.RemoteConfigLoader
 import com.jetbrains.kmpapp.data.storage.GamesStorage
 import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import com.jetbrains.kmpapp.data.storage.NotesFileStorage
@@ -12,8 +10,6 @@ import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
-import com.jetbrains.kmpapp.data.FreeRoomsRepository
-import com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
@@ -27,7 +23,6 @@ import org.koin.dsl.module
 import com.jetbrains.kmpapp.data.TaskRepository
 import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
-import com.jetbrains.kmpapp.screens.compare.CompareScheduleViewModel
 import com.jetbrains.kmpapp.screens.games.GamesViewModel
 import com.jetbrains.kmpapp.screens.notes.NotesViewModel
 import com.jetbrains.kmpapp.screens.services.ServicesViewModel
@@ -69,23 +64,18 @@ val dataModule = module {
     single { com.jetbrains.kmpapp.data.storage.NotesFileStorage() }
     singleOf(::LessonNotesStorage)
     singleOf(::UnifiedSyncManager)
-    singleOf(::MireaScheduleApi)
     singleOf(::VkAvatarLoader)
     singleOf(::ScheduleStorage)
     singleOf(::GamesStorage)
     singleOf(::ScheduleRepository)
     singleOf(::AppUpdateChecker)
-    singleOf(::FreeRoomsRepository)
     singleOf(::TaskRepository)
-    singleOf(::RemoteConfigLoader)
 }
 
 val viewModelModule = module {
     factoryOf(::ScheduleViewModel)
     factoryOf(::OtherViewModel)
-    factoryOf(::FreeRoomsViewModel)
     factoryOf(::TasksViewModel)
-    factoryOf(::CompareScheduleViewModel)
     factoryOf(::NotesViewModel)
     factoryOf(::ServicesViewModel)
     factoryOf(::GamesViewModel)

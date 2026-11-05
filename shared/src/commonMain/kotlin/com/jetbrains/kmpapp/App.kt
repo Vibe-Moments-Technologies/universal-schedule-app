@@ -31,15 +31,10 @@ import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.components.GESTURE_BLOCKER_HEIGHT
 import com.jetbrains.kmpapp.screens.components.LayeredNavHost
 import com.jetbrains.kmpapp.screens.components.systemGestureBlocker
-import com.jetbrains.kmpapp.screens.compare.CompareScheduleScreen
-import com.jetbrains.kmpapp.screens.compare.CompareScheduleViewModel
-import com.jetbrains.kmpapp.screens.map.MapScreen
 import com.jetbrains.kmpapp.screens.notes.NotesScreen
 import com.jetbrains.kmpapp.screens.notes.NotesViewModel
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
-import com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen
-import com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.services.ServicesScreen
@@ -117,9 +112,7 @@ fun App() {
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
-    val freeRoomsViewModel: FreeRoomsViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
-    val compareViewModel: CompareScheduleViewModel = koinViewModel()
     val notesViewModel: NotesViewModel = koinViewModel()
     val servicesViewModel: ServicesViewModel = koinViewModel()
     val gamesViewModel: GamesViewModel = koinViewModel()
@@ -357,20 +350,11 @@ fun App() {
                         AppTab.SCHEDULE -> {
                             ScheduleScreen(viewModel = scheduleViewModel)
                         }
-                        AppTab.FREE_ROOMS -> {
-                            FreeRoomsScreen(viewModel = freeRoomsViewModel)
-                        }
                         AppTab.TASKS -> {
                             TasksScreen(viewModel = tasksViewModel)
                         }
-                        AppTab.MAP -> {
-                            MapScreen()
-                        }
                         AppTab.NOTES -> {
                             NotesScreen(viewModel = notesViewModel)
-                        }
-                        AppTab.COMPARE -> {
-                            CompareScheduleScreen(viewModel = compareViewModel)
                         }
                         AppTab.GAMES -> {
                             GamesScreen(viewModel = gamesViewModel)
@@ -431,13 +415,8 @@ fun App() {
                                 AppTab.SCHEDULE -> {
                                     scheduleViewModel.selectLessonForDetail(null)
                                 }
-                                AppTab.FREE_ROOMS -> {
-                                    freeRoomsViewModel.selectRoomForDetail(null)
-                                }
                                 AppTab.TASKS -> {}
-                                AppTab.MAP -> {}
                                 AppTab.NOTES -> {}
-                                AppTab.COMPARE -> {}
                                 AppTab.GAMES -> {
                                     gamesViewModel.closeGame()
                                 }
