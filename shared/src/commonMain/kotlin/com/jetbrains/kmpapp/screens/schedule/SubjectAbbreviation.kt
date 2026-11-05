@@ -1,10 +1,13 @@
 package com.jetbrains.kmpapp.screens.schedule
 
-internal fun abbreviateSubjectName(subject: String): String {
-    val words = subject.split(' ', '-').filter { it.isNotBlank() }
-    if (words.size <= 2) return subject
-    return words.joinToString("") { word ->
-        val first = word.first()
-        if (word.length > 2) first.uppercaseChar().toString() else first.toString()
-    }
-}
+import com.jetbrains.kmpapp.data.widget.WidgetLabels
+
+/**
+ * Сокращение названия дисциплины для экрана расписания.
+ *
+ * Логика живёт в [WidgetLabels.abbreviateSubject] — один источник истины:
+ * виджетам (Android Glance и iOS Swift-зеркало) и экрану нужно одно и то же
+ * поведение, иначе сокращённое название в виджете не совпадёт с приложением.
+ */
+internal fun abbreviateSubjectName(subject: String): String =
+    WidgetLabels.abbreviateSubject(subject)

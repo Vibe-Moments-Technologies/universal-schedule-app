@@ -27,9 +27,12 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Widget
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +61,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ThemeMode
+import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
+import com.jetbrains.kmpapp.data.widget.WidgetPinFeedback
+import com.jetbrains.kmpapp.data.widget.isScheduleWidgetPinningSupported
+import com.jetbrains.kmpapp.data.widget.requestScheduleWidgetPin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+
+/**
+ * Ждать открытия конфигуратора виджета после запроса закрепления, прежде
+ * чем решить, что системный диалог был подавлен (OEM-запрет). 5 секунд
+ * хватает на подтверждение в системном окне.
+ */
+private const val WIDGET_PIN_DIALOG_TIMEOUT_MS = 5_000L
 
 @Composable
 fun SettingsScreen(
@@ -90,6 +107,10 @@ fun SettingsScreen(
     var showKawaiiDialog by remember { mutableStateOf(false) }
     var showCustomMinutesDialog by remember { mutableStateOf(false) }
     var customMinutesDraft by remember { mutableStateOf("") }
+    var widgetConfigShortNames by remember { mutableStateOf(false) }
+    var showWidgetPinFailedDialog by remember { mutableStateOf(false) }
+    val semester by viewModel.semester.collectAsState()
+    val scope = rememberCoroutineScope()
 
     // Скролл живёт в ViewModel: LayeredNavHost пересоздаёт этот экран в
     // другом слое при переходе в подраздел — общий ScrollState переживает
@@ -388,8 +409,97 @@ fun SettingsScreen(
                 }
             }
 
+            // Section: Виджет расписания (закрепление на рабочем столе)
+            if (com.jetbrains.kmpapp.data.widget.isScheduleWidgetPinningSupported()) {
+                SettingsSectionCard(
+                    title = "Виджет расписания",
+                    icon = Icons.Default.Widget
+                ) {
+                    Column {
+                        Text(
+                            text = "Ближайшие пары семестра прямо на рабочем столе: аудитория, время и дисциплина. Расписание одно — виджет показывает его всегда",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { widgetConfigShortNames = !widgetConfigShortNames }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Сокращать длинные названия",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Инициалы слов: «Базы данных и управление ими» → «БДиУИ»",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Checkbox(
+                                checked = widgetConfigShortNames,
+                                onCheckedChange = { widgetConfigShortNames = it }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                // Расписание одно: цель — активный семестр.
+                                // Тот же контракт, что у ApplyActivity.
+                                if (semester != null) {
+                                    com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.setPendingConfig(
+                                        com.jetbrains.kmpapp.data.model.SemesterConfig.TARGET_ID,
+                                        widgetConfigShortNames
+                                    )
+                                }
+                                if (com.jetbrains.kmpapp.data.widget.requestScheduleWidgetPin()) {
+                                    com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.markPinRequested()
+                                    val requestedAt = com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.lastPinRequestedAtMillis
+                                    scope.launch {
+                                        delay(WIDGET_PIN_DIALOG_TIMEOUT_MS)
+                                        if (com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.lastConfigureOpenedAtMillis < requestedAt) {
+                                            showWidgetPinFailedDialog = true
+                                        }
+                                    }
+                                } else {
+                                    showWidgetPinFailedDialog = true
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Добавить виджет")
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+
+    if (showWidgetPinFailedDialog) {
+        AlertDialog(
+            onDismissRequest = { showWidgetPinFailedDialog = false },
+            title = { Text("Не удалось добавить виджет") },
+            text = {
+                Text(
+                    "Добавьте его вручную: долгое нажатие на рабочем столе → «Виджеты» → «Расписание»."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showWidgetPinFailedDialog = false }) {
+                    Text("Понятно")
+                }
+            }
+        )
     }
 
     if (showCustomMinutesDialog) {

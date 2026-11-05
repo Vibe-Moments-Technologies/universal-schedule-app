@@ -12,6 +12,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import com.jetbrains.kmpapp.notifications.AndroidNotificationsEngine
+import com.jetbrains.kmpapp.widget.ScheduleWidgetStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -39,6 +43,27 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             App()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        publishWidgetSnapshot()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        publishWidgetSnapshot()
+    }
+
+    /**
+     * Снапшот для виджета публикуется при возврате и уходе в фон — так же,
+     * как iOS зовёт `WidgetSync.push()` по `scenePhase`.
+     */
+    private fun publishWidgetSnapshot() {
+        val appContext = applicationContext
+        CoroutineScope(Dispatchers.IO).launch {
+            ScheduleWidgetStore.publish(appContext)
         }
     }
 }

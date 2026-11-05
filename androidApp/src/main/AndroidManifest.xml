@@ -49,6 +49,41 @@
         <receiver
             android:name=".notifications.LessonAlarmReceiver"
             android:exported="false"/>
+
+        <!-- Виджет расписания (Glance): данные берёт из общего снапшота,
+             который приложение пишет в SharedPreferences. -->
+        <receiver
+            android:name=".widget.ScheduleWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/schedule_widget_info"/>
+        </receiver>
+
+        <!-- Настройка экземпляра виджета (системный флоу: долгое нажатие
+             на рабочем столе). -->
+        <activity
+            android:name=".widget.ScheduleWidgetConfigureActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Применение параметров внутреннего конфигуратора после
+             подтверждения закрепления из приложения: стартует
+             success-callback'ом, не интерактивна. -->
+        <activity
+            android:name=".widget.ScheduleWidgetApplyActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay"/>
     </application>
 
 </manifest>

@@ -11,6 +11,7 @@ dependencies {
     // shared — так же, как material3, который здесь никогда не объявлялся.
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.glance.appwidget)
 }
 
 android {
