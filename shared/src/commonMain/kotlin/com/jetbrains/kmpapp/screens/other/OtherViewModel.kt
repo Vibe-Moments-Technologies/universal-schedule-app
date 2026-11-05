@@ -226,7 +226,6 @@ class OtherViewModel(
     fun setAppIcon(name: String) = repository.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = repository.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = repository.setNotifyMinutesBefore(minutes)
-    fun setNotificationsTargetId(targetId: Int?) = repository.setNotificationsTargetId(targetId)
     fun setVpnWarningEnabled(enabled: Boolean) = repository.setVpnWarningEnabled(enabled)
     fun setAskBeforeNoteDelete(ask: Boolean) = repository.setAskBeforeNoteDelete(ask)
 

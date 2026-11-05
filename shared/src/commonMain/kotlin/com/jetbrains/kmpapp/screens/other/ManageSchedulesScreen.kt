@@ -120,6 +120,7 @@ fun ManageSchedulesScreen(
                     }
                 }
             } else {
+                val info = semester
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
@@ -133,18 +134,18 @@ fun ManageSchedulesScreen(
                             Icon(Icons.Default.EventNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                "${semester.group} · ${semester.semesterNumber} сем.",
+                                "${info.group} · ${info.semesterNumber} сем.",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Text(
                             listOfNotNull(
-                                semester.university.ifBlank { null },
-                                "Курс ${semester.course}",
-                                "Недель: ${semester.weeksCount}",
-                                "Начало: ${semester.startDate}",
-                                "Занятий в шаблоне: ${semester.entries.size}"
+                                info.university.ifBlank { null },
+                                "Курс ${info.course}",
+                                "Недель: ${info.weeksCount}",
+                                "Начало: ${info.startDate}",
+                                "Занятий в шаблоне: ${info.entries.size}"
                             ).joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

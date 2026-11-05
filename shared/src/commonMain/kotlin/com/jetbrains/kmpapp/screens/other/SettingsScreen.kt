@@ -667,12 +667,13 @@ fun SettingsScreen(
             onDismissRequest = { showWidgetConfigDialog = false },
             title = { GlitchText("Виджет расписания") },
             text = {
-                if (semester == null) {
+                val config = semester
+                if (config == null) {
                     GlitchText("Сначала соберите семестр — виджет показывает его пары.")
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         GlitchText(
-                            text = "Виджет показывает расписание «${semester.group}».",
+                            text = "Виджет показывает расписание «${config.group}».",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
