@@ -76,6 +76,11 @@ class ScheduleRepository(
     }
 
     val showAbbreviatedNames: StateFlow<Boolean> = storage.showAbbreviatedNames
+    val calendarExpandState: StateFlow<com.jetbrains.kmpapp.data.model.CalendarExpandState> =
+        storage.calendarExpandState
+
+    fun setCalendarExpandState(state: com.jetbrains.kmpapp.data.model.CalendarExpandState) =
+        storage.setCalendarExpandState(state)
 
     fun setShowAbbreviatedNames(enabled: Boolean) {
         storage.setShowAbbreviatedNames(enabled)

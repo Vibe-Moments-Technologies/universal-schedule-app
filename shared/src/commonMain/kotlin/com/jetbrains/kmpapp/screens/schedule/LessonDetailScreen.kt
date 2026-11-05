@@ -153,7 +153,13 @@ fun LessonDetailScreen(
                 .clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null
-                ) { focusManager.clearFocus() }
+                ) {
+                    focusManager.clearFocus()
+                    // iOS: программный clearFocus в модальных слоях не всегда
+                    // сворачивает клавиатуру — UIKit-обход достаёт активный
+                    // FirstResponder сам. Android: no-op-дубль безвреден.
+                    com.jetbrains.kmpapp.screens.components.forceHideKeyboard()
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

@@ -32,6 +32,12 @@ class ScheduleViewModel(
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
+    val calendarExpandState: StateFlow<com.jetbrains.kmpapp.data.model.CalendarExpandState> =
+        repository.calendarExpandState
+
+    fun setCalendarExpandState(state: com.jetbrains.kmpapp.data.model.CalendarExpandState) {
+        repository.setCalendarExpandState(state)
+    }
 
     private var lastAutoScrolledDate: LocalDate? = null
 

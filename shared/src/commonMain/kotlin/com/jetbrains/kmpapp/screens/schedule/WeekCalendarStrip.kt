@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,12 +30,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.model.CalendarExpandState
 import com.jetbrains.kmpapp.data.model.DateUtils
 import com.jetbrains.kmpapp.screens.components.getLessonDotColor
 import kotlinx.coroutines.launch
@@ -47,12 +53,17 @@ import androidx.compose.foundation.shape.CircleShape
 
 private const val BASE_PAGE = 1000
 
+/** Порог вертикального свайпа-ступени, px (жест раскрытия). */
+private const val EXPAND_SWIPE_THRESHOLD_PX = 44f
+
 @Composable
 fun WeekCalendarStrip(
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     lessonSummaries: Map<LocalDate, DayLessonSummary> = emptyMap(),
     onTitleClick: () -> Unit = {},
+    expandState: CalendarExpandState = CalendarExpandState.WEEK,
+    onExpandStateChange: (CalendarExpandState) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val today = DateUtils.today()
@@ -83,10 +94,54 @@ fun WeekCalendarStrip(
     val currentWeekEnd = currentWeekMonday.plus(DatePeriod(days = 7))
     val todayInCurrentWeek = today >= currentWeekMonday && today < currentWeekEnd
     val weekInfo = DateUtils.getWeekInfo(currentWeekMonday)
-    val monthTitle = DateUtils.formatMonthTitle(currentWeekMonday.month)
-    val year = currentWeekMonday.year
+    // Месяц в заголовке — от ВЫБРАННОГО дня, не от понедельника недели
+    // (пограничная неделя 27 окт–1 ноя показывала «Октябрь», хотя выбран
+    // Вс=1 ноября). Выбран день другой недели (листнули, но не тапнули) —
+    // берём середину видимой недели, чтобы заголовок следовал за листанием.
+    val headerDate = if (selectedDate >= currentWeekMonday && selectedDate < currentWeekEnd) {
+        selectedDate
+    } else {
+        currentWeekMonday.plus(DatePeriod(days = 3))
+    }
+    val monthTitle = DateUtils.formatMonthTitle(headerDate.month)
+    val year = headerDate.year
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Состояние и колбэки жеста обязаны читаться через rememberUpdatedState:
+    // pointerInput запускается ОДИН раз, а состояние меняется (неделя → две
+    // недели). Без этого жест навсегда запоминает значения первой композиции —
+    // после раскрытия пересчитывает те же ступени и «перестаёт реагировать».
+    val currentExpandState by rememberUpdatedState(expandState)
+    val currentOnExpandStateChange by rememberUpdatedState(onExpandStateChange)
+    val currentOnTitleClick by rememberUpdatedState(onTitleClick)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            // Жест раскрытия/сворачивания живёт на всей области календарика.
+            // Условия бесконтекстности:
+            // — тапы не затрагиваются: жест реагирует только на смещение
+            //   больше порога, короткое нажатие до порога — не наш случай;
+            // — горизонтальный пейджер не затрагивается: порог направления
+            //   требует вертикального доминирования (|dy| > 1.5|dx|), иначе
+            //   жест отменяется и события не потребляются вовсе;
+            // — событие потребляется только когда жест признан нашим.
+            .calendarExpandGesture(
+                onSwipeDown = {
+                    val next = currentExpandState.onSwipeDown()
+                    if (next != currentExpandState) currentOnExpandStateChange(next)
+                },
+                onSwipeUp = {
+                    val next = currentExpandState.onSwipeUp()
+                    if (next != currentExpandState) {
+                        currentOnExpandStateChange(next)
+                        // MONTH-ступень — это месячный оверлей: свайп вниз
+                        // до месяца открывает его (тот же onTitleClick,
+                        // что и тап по заголовку месяца).
+                        if (next == CalendarExpandState.MONTH) currentOnTitleClick()
+                    }
+                }
+            )
+    ) {
         // Month, Year, Week bar with navigation arrows & Сегодня button
         Row(
             modifier = Modifier
@@ -175,113 +230,34 @@ fun WeekCalendarStrip(
             val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
             val weekDates = (0..6).map { pageMonday.plus(DatePeriod(days = it)) }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+            // Раскрытие в две недели: чётная и нечётная недели рядом.
+            // Вторая строка — соседняя неделя, чтобы пара всегда была видна.
+            val secondRowDates = if (expandState == CalendarExpandState.TWO_WEEKS) {
+                val secondMonday = pageMonday.plus(DatePeriod(days = 7))
+                (0..6).map { secondMonday.plus(DatePeriod(days = it)) }
+            } else {
+                null
+            }
 
-                weekDates.forEach { date ->
-                    val isSelected = date == selectedDate
-                    val isToday = date == today
-                    val summary = lessonSummaries[date]
-                    val lessonTypes = summary?.lessonTypes ?: emptyList()
-                    val row1 = lessonTypes.take(5)
-                    val row2 = lessonTypes.drop(5).take(5)
+            Column {
+                WeekRow(
+                    weekDates = weekDates,
+                    selectedDate = selectedDate,
+                    today = today,
+                    lessonSummaries = lessonSummaries,
+                    onDateSelected = onDateSelected
+                )
 
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onDateSelected(date) }
-                            .padding(vertical = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = DateUtils.formatDayOfWeekShort(date.dayOfWeek),
-                            fontSize = 11.5.sp,
-                            fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Medium,
-                            color = when {
-                                isSelected -> MaterialTheme.colorScheme.primary
-                                isToday -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(3.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .then(
-                                    when {
-                                        isSelected -> Modifier.background(MaterialTheme.colorScheme.primary)
-                                        isToday -> Modifier
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                        else -> Modifier
-                                    }
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = date.day.toString(),
-                                fontSize = 14.5.sp,
-                                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.SemiBold,
-                                color = when {
-                                    isSelected -> MaterialTheme.colorScheme.onPrimary
-                                    isToday -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(5.dp))
-
-                        // Colored indicator dots matching lesson cards (1 dot per lesson)
-                        // Centered horizontally, wrap to row 2 if > 5 dots
-                        Column(
-                            modifier = Modifier.height(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            if (row1.isNotEmpty()) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    row1.forEach { lessonType ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(4.5.dp)
-                                                .clip(CircleShape)
-                                                .background(getLessonDotColor(lessonType, isDark))
-                                        )
-                                    }
-                                }
-                            }
-                            if (row2.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(2.5.dp))
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    row2.forEach { lessonType ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(4.5.dp)
-                                                .clip(CircleShape)
-                                                .background(getLessonDotColor(lessonType, isDark))
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (secondRowDates != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    WeekRow(
+                        weekDates = secondRowDates,
+                        selectedDate = selectedDate,
+                        today = today,
+                        lessonSummaries = lessonSummaries,
+                        onDateSelected = onDateSelected,
+                        weekParityLabel = parityLabel(secondRowDates.first())
+                    )
                 }
             }
         }
@@ -298,3 +274,190 @@ fun WeekCalendarStrip(
     }
 }
 
+/** Подпись чётности недели для второй строки двухнедельного режима. */
+private fun parityLabel(monday: LocalDate): String {
+    val info = DateUtils.getWeekInfo(monday)
+    return if (info.isEven) "чётная" else "нечётная"
+}
+
+/** Одна строка дней недели (общая для одно- и двухнедельного режимов). */
+@Composable
+private fun WeekRow(
+    weekDates: List<LocalDate>,
+    selectedDate: LocalDate,
+    today: LocalDate,
+    lessonSummaries: Map<LocalDate, DayLessonSummary>,
+    onDateSelected: (LocalDate) -> Unit,
+    weekParityLabel: String? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+
+        weekDates.forEach { date ->
+            val isSelected = date == selectedDate
+            val isToday = date == today
+            val summary = lessonSummaries[date]
+            val lessonTypes = summary?.lessonTypes ?: emptyList()
+            val row1 = lessonTypes.take(5)
+            val row2 = lessonTypes.drop(5).take(5)
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onDateSelected(date) }
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (weekParityLabel != null) {
+                    Text(
+                        text = weekParityLabel,
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+                Text(
+                    text = DateUtils.formatDayOfWeekShort(date.dayOfWeek),
+                    fontSize = 11.5.sp,
+                    fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Medium,
+                    color = when {
+                        isSelected -> MaterialTheme.colorScheme.primary
+                        isToday -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .then(
+                            when {
+                                isSelected -> Modifier.background(MaterialTheme.colorScheme.primary)
+                                isToday -> Modifier
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                else -> Modifier
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = date.day.toString(),
+                        fontSize = 14.5.sp,
+                        fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.SemiBold,
+                        color = when {
+                            isSelected -> MaterialTheme.colorScheme.onPrimary
+                            isToday -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+                // Colored indicator dots matching lesson cards (1 dot per lesson)
+                // Centered horizontally, wrap to row 2 if > 5 dots
+                Column(
+                    modifier = Modifier.height(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (row1.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            row1.forEach { lessonType ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(4.5.dp)
+                                        .clip(CircleShape)
+                                        .background(getLessonDotColor(lessonType, isDark))
+                                )
+                            }
+                        }
+                    }
+                    if (row2.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.5.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            row2.forEach { lessonType ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(4.5.dp)
+                                        .clip(CircleShape)
+                                        .background(getLessonDotColor(lessonType, isDark))
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Модификатор жеста раскрытия/сворачивания календарика.
+ *
+ * Область захвата — весь календарик, сама область не красится, все чужие
+ * клики и жесты продолжают работать:
+ *
+ * 1. Первое нажатие наблюдается, но НЕ потребляется: клики по дням,
+ *    «Сегодня», стрелкам и заголовку работают как раньше.
+ * 2. Жест признаётся нашим только если вертикальное смещение превысило
+ *    порог И вертикаль доминирует над горизонталью (иначе это свайп
+ *    пейджера недели — не наш).
+ * 3. До признания события не потребляются вообще. После признания —
+ *    потребляются, чтобы список под лентой не дёрнулся.
+ * 4. Один жест — одна ступень: порог срабатывает один раз.
+ */
+private fun Modifier.calendarExpandGesture(
+    onSwipeDown: () -> Unit,
+    onSwipeUp: () -> Unit
+): Modifier = this.pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        var handled = false
+        var done = false
+        var dy = 0f
+        var dx = 0f
+        while (!done) {
+            val event = awaitPointerEvent()
+            if (event.changes.any { it.isConsumed }) {
+                // Чужой жест уже в работе (пейджер перехватил свайп):
+                // выходим, не мешаем.
+                done = true
+                continue
+            }
+            val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+            dx += change.positionChange().x
+            dy += change.positionChange().y
+            if (!handled) {
+                val verticalDominates = kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.5f
+                if (verticalDominates && kotlin.math.abs(dy) > EXPAND_SWIPE_THRESHOLD_PX) {
+                    // Ось Y в Compose растёт вниз: dy > 0 — свайп вниз
+                    // (раскрытие), dy < 0 — вверх (сворачивание).
+                    if (dy > 0) onSwipeDown() else onSwipeUp()
+                    handled = true
+                }
+            }
+            if (handled) {
+                event.changes.forEach { it.consume() }
+            }
+            if (event.changes.all { !it.pressed }) done = true
+        }
+    }
+}

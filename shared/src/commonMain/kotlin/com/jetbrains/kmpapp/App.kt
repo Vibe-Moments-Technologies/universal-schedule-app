@@ -33,6 +33,8 @@ import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
+import com.jetbrains.kmpapp.screens.components.GESTURE_BLOCKER_HEIGHT
+import com.jetbrains.kmpapp.screens.components.systemGestureBlocker
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherSubScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
@@ -233,6 +235,19 @@ fun App() {
 
                 val density = LocalDensity.current
                 val isImeVisible = WindowInsets.ime.getBottom(density) > 0
+
+                // Невидимый блок системных жестов (только iOS, решение
+                // владельца): от низа экрана до середины дока. Свайп системной
+                // шторки больше не перехватывается приложением (расписание
+                // не уезжает); сам жест распознаёт система по edge-зоне.
+                // Слой над контентом, ПОД доком: клики дока работают.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(GESTURE_BLOCKER_HEIGHT)
+                        .systemGestureBlocker()
+                )
 
                 if (!isImeVisible) {
                     // Идёт партия — иконка «Игр» в доке превращается в «назад»:

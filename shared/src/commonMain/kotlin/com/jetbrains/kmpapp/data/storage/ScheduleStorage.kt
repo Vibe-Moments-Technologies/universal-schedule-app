@@ -65,6 +65,13 @@ class ScheduleStorage(
     private val _showAbbreviatedNames = MutableStateFlow<Boolean>(false)
     val showAbbreviatedNames: StateFlow<Boolean> = _showAbbreviatedNames.asStateFlow()
 
+    /** Ступень раскрытия ленты календаря: неделя → две недели → месяц. */
+    private val _calendarExpandState = MutableStateFlow(
+        com.jetbrains.kmpapp.data.model.CalendarExpandState.WEEK
+    )
+    val calendarExpandState: StateFlow<com.jetbrains.kmpapp.data.model.CalendarExpandState> =
+        _calendarExpandState.asStateFlow()
+
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
@@ -209,6 +216,9 @@ class ScheduleStorage(
         _showBreakProgress.value = loadBooleanFlag(KEY_SHOW_BREAK_PROGRESS, true)
         _autoScrollToCurrentLesson.value = loadBooleanFlag(KEY_AUTO_SCROLL_CURRENT_LESSON, true)
         _showAbbreviatedNames.value = loadBooleanFlag(KEY_SHOW_ABBREVIATED_NAMES, false)
+        _calendarExpandState.value = com.jetbrains.kmpapp.data.model.CalendarExpandState.fromName(
+            platformStorage.getString(KEY_CALENDAR_EXPAND_STATE)
+        )
         _themeOverlay.value = loadThemeOverlay()
         _unlockedThemes.value = loadUnlockedThemes()
         _cyberpunkVariant.value =
@@ -339,6 +349,18 @@ class ScheduleStorage(
 
     fun setShowAbbreviatedNames(enabled: Boolean) =
         persistFlag(_showAbbreviatedNames, KEY_SHOW_ABBREVIATED_NAMES, enabled)
+
+    /** Ступень раскрытия календаря: пишется всегда, переживает рестарт. */
+    fun setCalendarExpandState(state: com.jetbrains.kmpapp.data.model.CalendarExpandState) {
+        _calendarExpandState.value = state
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_CALENDAR_EXPAND_STATE, state.name)
+            } catch (e: Exception) {
+                println("Failed to persist calendar expand state: ${e.message}")
+            }
+        }
+    }
 
     fun setThemeOverlay(overlay: ThemeOverlay) {
         applyThemeOverlay(overlay, dismissSeason = true)
@@ -582,6 +604,7 @@ class ScheduleStorage(
         _showBreakProgress.value = true
         _autoScrollToCurrentLesson.value = true
         _showAbbreviatedNames.value = false
+        _calendarExpandState.value = com.jetbrains.kmpapp.data.model.CalendarExpandState.WEEK
         _themeMode.value = ThemeMode.SYSTEM
         _themeOverlay.value = ThemeOverlay.NONE
         _cheatsAgreed.value = cheatsAgreedBefore
@@ -642,6 +665,7 @@ class ScheduleStorage(
         private const val KEY_SHOW_BREAK_PROGRESS = "uschedule_show_break_progress"
         private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "uschedule_auto_scroll_current_lesson"
         private const val KEY_SHOW_ABBREVIATED_NAMES = "uschedule_show_abbreviated_names"
+        private const val KEY_CALENDAR_EXPAND_STATE = "uschedule_calendar_expand_state"
         private const val KEY_APP_THEME = "uschedule_app_theme"
         private const val KEY_TASKS_ENABLED = "uschedule_tasks_enabled"
         private const val KEY_GAMES_ENABLED = "uschedule_games_enabled"

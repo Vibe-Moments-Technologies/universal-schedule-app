@@ -88,6 +88,7 @@ private fun ScheduleMainContent(
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
+    val calendarExpandState by viewModel.calendarExpandState.collectAsState()
     // Значение НЕ читаем здесь: тик раз в 30 секунд не должен пересобирать
     // всё дерево расписания. State уходит вниз и читается только в карточках
     // «сегодня» (см. LessonCard).
@@ -183,6 +184,8 @@ private fun ScheduleMainContent(
                         onDateSelected = { viewModel.selectDate(it) },
                         lessonSummaries = dayLessonSummaries,
                         onTitleClick = { showMonthPicker = true },
+                        expandState = calendarExpandState,
+                        onExpandStateChange = { viewModel.setCalendarExpandState(it) },
                         modifier = Modifier
                             .statusBarsPadding()
                             .padding(top = 4.dp, bottom = 2.dp)
