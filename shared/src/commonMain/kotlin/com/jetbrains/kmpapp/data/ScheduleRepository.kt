@@ -144,8 +144,13 @@ class ScheduleRepository(
                         NotificationsManager.reschedule(emptyList(), minutes) { "" }
                     } else {
                         NotificationsManager.reschedule(lessons, minutes) { lesson ->
-                            val room = lesson.classrooms.firstOrNull()?.let { ", ауд. $it" } ?: ""
-                            "Через ${minutes} мин: ${lesson.subject}$room"
+                            // «Через N мин» из текста убрано (репорт владельца
+                            // krasava): относительное время показывает сама
+                            // система в углу баннера — текст не дублирует.
+                            // Тип пары тоже не пишем: он виден цветом карточки.
+                            val room = lesson.classrooms.firstOrNull()
+                                ?.let { ", ауд. $it" } ?: ""
+                            "${lesson.subject} в ${lesson.startTime}$room"
                         }
                     }
                 }

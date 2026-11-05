@@ -28,7 +28,37 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
     func requestAuthorization() {
         // Без .badge: красный кружок с цифрой на иконке не используем,
         // просить на него разрешение — лишняя галочка в системном окне.
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            // Ответ системного диалога сразу попадает в кэш: тумблер в
+            // настройках читает его синхронно при следующем включении.
+            UserDefaults.standard.set(granted, forKey: Self.authorizedKey)
+        }
+        // Статус мог измениться и без нас (переход в системные настройки
+        // и обратно) — сверяемся при каждом запросе.
+        Self.refreshAuthorizationCache()
+    }
+
+    func isAuthorized() -> Bool {
+        // Синхронно из кэша: тумблер сворачивает состояние без гонок.
+        // После отказа iOS не показывает диалог повторно — включённым
+        // переключатель может быть только при выданном разрешении.
+        if UserDefaults.standard.object(forKey: Self.authorizedKey) != nil {
+            return UserDefaults.standard.bool(forKey: Self.authorizedKey)
+        }
+        // Кэша ещё нет (первый запуск) — честно false: тумблер сам
+        // запросит разрешение при попытке включения.
+        return false
+    }
+
+    private static let authorizedKey = "uschedule_notifications_authorized"
+
+    /// Асинхронный перерасчёт кэша статуса разрешения.
+    static func refreshAuthorizationCache() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let granted = settings.authorizationStatus == .authorized ||
+                settings.authorizationStatus == .provisional
+            UserDefaults.standard.set(granted, forKey: authorizedKey)
+        }
     }
 
     /// Идентификаторы, поставленные этой партией занятий. Храним их в
@@ -42,9 +72,12 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
         scheduledLessonIds = Set(UserDefaults.standard.stringArray(forKey: scheduledIdsKey) ?? [])
     }
 
-    func schedule(id: String, title: String, body: String, dateEpochMillis: Int64) {
+    func schedule(id: String, title: String, subtitle: String, body: String, dateEpochMillis: Int64) {
         let content = UNMutableNotificationContent()
         content.title = title
+        if !subtitle.isEmpty {
+            content.subtitle = subtitle
+        }
         content.body = body
         content.sound = .default
         // Ближние уведомления (тест из отладки) — интервальный триггер:

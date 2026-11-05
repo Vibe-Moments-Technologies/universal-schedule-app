@@ -28,7 +28,20 @@ object AndroidNotificationsEngine : NotificationsManager.NotificationEngine {
         permissionRequester?.invoke()
     }
 
-    override fun schedule(id: String, title: String, body: String, dateEpochMillis: Long) {
+    override fun isAuthorized(): Boolean {
+        val ctx = context ?: return false
+        return android.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+    }
+
+    // subtitle не используется на Android (iOS-only механика) — параметр
+    // присутствует в контракте движка, здесь игнорируется.
+    override fun schedule(
+        id: String,
+        title: String,
+        subtitle: String,
+        body: String,
+        dateEpochMillis: Long
+    ) {
         val ctx = context ?: return
         val intent = alarmIntent(ctx, id, title, body)
         // Ближний тест из отладки: без разрешения на точные будильники
