@@ -30,7 +30,7 @@ object AndroidNotificationsEngine : NotificationsManager.NotificationEngine {
 
     override fun isAuthorized(): Boolean {
         val ctx = context ?: return false
-        return android.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+        return androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()
     }
 
     // subtitle не используется на Android (iOS-only механика) — параметр
