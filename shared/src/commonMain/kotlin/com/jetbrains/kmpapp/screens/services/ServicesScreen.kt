@@ -190,7 +190,7 @@ private fun ServiceCard(tab: AppTab, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 GlitchText(
-                    text = SERVICE_DISPLAY_TITLES[tab] ?: tab.title,
+                    text = tab.title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
