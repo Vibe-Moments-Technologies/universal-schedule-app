@@ -106,6 +106,7 @@ fun App() {
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
+    val gamesViewModel: com.jetbrains.kmpapp.screens.games.GamesViewModel = koinViewModel()
 
     // Аналитика включена по умолчанию; выключается тумблером в настройках.
     LaunchedEffect(Unit) {
@@ -135,8 +136,15 @@ fun App() {
     // быть выключена, но выбранный вариант переживает переключения тем.
     val cyberpunkVariant by repository.cyberpunkVariant.collectAsState()
 
+    // Тема Error включается теми же правилами, что и в «Сапере» (сломанный
+    // рекорд 0 с), но распространяется на всё приложение: пока существует
+    // сломанный рекорд, вся схема и типографика заменяются на красный глюк.
+    val errorActive by gamesViewModel.errorActive.collectAsState()
+
     val colors = if (halloweenActive) {
         HalloweenDarkColors
+    } else if (errorActive) {
+        com.jetbrains.kmpapp.theme.ErrorColors
     } else {
         when (themeOverlay) {
             ThemeOverlay.SAKURA -> if (isDark) SakuraDarkColors else SakuraLightColors
@@ -153,17 +161,24 @@ fun App() {
         }
     }
 
-    MaterialTheme(colorScheme = colors) {
-        // На Хэллоуин глитч-надписи включаются как «страшный» эффект:
-        // светлые заголовки получают кровавые двойники со смещением.
+    MaterialTheme(
+        colorScheme = colors,
+        typography = if (errorActive) com.jetbrains.kmpapp.theme.ErrorTypography else MaterialTheme.typography
+    ) {
+        // На Хэллоуин глитч-надписи включаются как «страшный» эффект;
+        // в теме Error — все светлые надписи рисуются глитч-двойниками.
         androidx.compose.runtime.CompositionLocalProvider(
-            com.jetbrains.kmpapp.theme.LocalGlitchTextEnabled provides halloweenActive,
+            com.jetbrains.kmpapp.theme.LocalGlitchTextEnabled provides (halloweenActive || errorActive),
             com.jetbrains.kmpapp.theme.LocalHalloweenEnabled provides halloweenActive
         ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
+            // «Блики» темы Error на весь экран: те же скан-строки и полосы
+            // порчи, что на поле «Сапёра», но на всю площадь приложения.
+            com.jetbrains.kmpapp.theme.ErrorScanlines(enabled = errorActive)
+
             var currentTab by remember { mutableStateOf(AppTab.SCHEDULE) }
 
             LaunchedEffect(Unit) {
@@ -207,6 +222,9 @@ fun App() {
                         AppTab.TASKS -> {
                             TasksScreen(viewModel = tasksViewModel)
                         }
+                        AppTab.GAMES -> {
+                            com.jetbrains.kmpapp.screens.games.GamesScreen(viewModel = gamesViewModel)
+                        }
                         AppTab.OTHER -> {
                             OtherScreen(viewModel = otherViewModel)
                         }
@@ -217,8 +235,13 @@ fun App() {
                 val isImeVisible = WindowInsets.ime.getBottom(density) > 0
 
                 if (!isImeVisible) {
+                    // Идёт партия — иконка «Игр» в доке превращается в «назад»:
+                    // тап возвращает к меню выбора игры (см. backModeTab).
+                    val activeGame by gamesViewModel.activeGame.collectAsState()
+                    val gamesBackMode = if (currentTab == AppTab.GAMES && activeGame != null) AppTab.GAMES else null
                     FloatingDock(
                         currentTab = currentTab,
+                        backModeTab = gamesBackMode,
                         onTabSelected = {
                             currentTab = it
                             AppAnalytics.logEvent(AnalyticsEvents.NAV_TAB_OPEN, mapOf("tab" to it.name))
@@ -229,6 +252,9 @@ fun App() {
                                     scheduleViewModel.selectLessonForDetail(null)
                                 }
                                 AppTab.TASKS -> {}
+                                AppTab.GAMES -> {
+                                    gamesViewModel.closeGame()
+                                }
                                 AppTab.OTHER -> {
                                     otherViewModel.resetToRoot()
                                 }

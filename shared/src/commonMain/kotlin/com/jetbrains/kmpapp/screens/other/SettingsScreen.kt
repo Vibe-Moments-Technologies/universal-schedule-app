@@ -85,6 +85,8 @@ fun SettingsScreen(
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
     onOpenThemedThemes: () -> Unit = {},
+    onOpenSaperSettings: () -> Unit = {},
+    onOpenTetrisSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
@@ -100,6 +102,7 @@ fun SettingsScreen(
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
     val tasksEnabled by viewModel.tasksEnabled.collectAsState()
+    val gamesEnabled by viewModel.gamesEnabled.collectAsState()
     val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
@@ -246,6 +249,51 @@ fun SettingsScreen(
                     Switch(
                         checked = tasksEnabled,
                         onCheckedChange = { viewModel.setTasksEnabled(it) }
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Игры",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Сапёр и Тетрис — с рекордами и настройками",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = gamesEnabled,
+                        onCheckedChange = { viewModel.setGamesEnabled(it) }
+                    )
+                }
+                if (gamesEnabled) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsNavigationRow(
+                        title = "Настройки Сапёра",
+                        subtitle = "Управление, вертикальная доска",
+                        onClick = onOpenSaperSettings
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SettingsNavigationRow(
+                        title = "Настройки Тетриса",
+                        subtitle = "Управление и сложность",
+                        onClick = onOpenTetrisSettings
                     )
                 }
             }

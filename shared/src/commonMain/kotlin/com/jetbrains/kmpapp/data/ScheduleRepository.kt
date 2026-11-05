@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -53,17 +52,22 @@ class ScheduleRepository(
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
 
-    /** Состав дока: «Задачи» — единственная скрываемая вкладка. */
-    val dockTabs: StateFlow<List<AppTab>> = storage.tasksEnabled
-        .map { enabled ->
-            listOf(AppTab.SCHEDULE) +
-                (if (enabled) listOf(AppTab.TASKS) else emptyList()) +
-                listOf(AppTab.OTHER)
-        }
-        .stateIn(scope, SharingStarted.Eagerly, listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.OTHER))
+    /** Состав дока: «Задачи» и «Игры» — скрываемые вкладки. */
+    val dockTabs: StateFlow<List<AppTab>> = kotlinx.coroutines.flow.combine(
+        storage.tasksEnabled,
+        storage.gamesEnabled
+    ) { tasks, games ->
+        listOf(AppTab.SCHEDULE) +
+            (if (tasks) listOf(AppTab.TASKS) else emptyList()) +
+            (if (games) listOf(AppTab.GAMES) else emptyList()) +
+            listOf(AppTab.OTHER)
+    }.stateIn(scope, SharingStarted.Eagerly, listOf(AppTab.SCHEDULE, AppTab.GAMES, AppTab.OTHER))
 
     val tasksEnabled: StateFlow<Boolean> = storage.tasksEnabled
     fun setTasksEnabled(enabled: Boolean) = storage.setTasksEnabled(enabled)
+
+    val gamesEnabled: StateFlow<Boolean> = storage.gamesEnabled
+    fun setGamesEnabled(enabled: Boolean) = storage.setGamesEnabled(enabled)
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats = storage.getStorageStats()
 

@@ -1,10 +1,12 @@
 package com.jetbrains.kmpapp.di
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.storage.GamesStorage
 import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
+import com.jetbrains.kmpapp.screens.games.GamesViewModel
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import io.ktor.client.HttpClient
@@ -46,6 +48,7 @@ val dataModule = module {
     singleOf(::PlatformStorage)
     singleOf(::ScheduleStorage)
     singleOf(::LessonNotesStorage)
+    singleOf(::GamesStorage)
     singleOf(::ScheduleRepository)
     singleOf(::AppUpdateChecker)
     singleOf(::TaskRepository)
@@ -55,6 +58,7 @@ val viewModelModule = module {
     factoryOf(::ScheduleViewModel)
     factoryOf(::OtherViewModel)
     factoryOf(::TasksViewModel)
+    factoryOf(::GamesViewModel)
 }
 
 fun initKoin() {

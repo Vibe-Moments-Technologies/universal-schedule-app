@@ -68,9 +68,13 @@ class ScheduleStorage(
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
-    /** Вкладка «Задачи» в доке: единственная настраиваемая вкладка. По умолчанию выключена. */
+    /** Вкладка «Задачи» в доке: настраиваемая, по умолчанию выключена. */
     private val _tasksEnabled = MutableStateFlow(false)
     val tasksEnabled: StateFlow<Boolean> = _tasksEnabled.asStateFlow()
+
+    /** Вкладка «Игры» в доке: Сапёр и Тетрис. По умолчанию включена. */
+    private val _gamesEnabled = MutableStateFlow(true)
+    val gamesEnabled: StateFlow<Boolean> = _gamesEnabled.asStateFlow()
 
     private val _themeOverlay = MutableStateFlow(ThemeOverlay.NONE)
     val themeOverlay: StateFlow<ThemeOverlay> = _themeOverlay.asStateFlow()
@@ -220,6 +224,7 @@ class ScheduleStorage(
         _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT) ?: true
         AppAnalytics.setEventsEnabled(_analyticsEnabled.value)
         _tasksEnabled.value = loadBooleanFlag(KEY_TASKS_ENABLED, false)
+        _gamesEnabled.value = loadBooleanFlag(KEY_GAMES_ENABLED, true)
         _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
         _notifyMinutesBefore.value =
             platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15
@@ -521,6 +526,8 @@ class ScheduleStorage(
 
     fun setTasksEnabled(enabled: Boolean) = persistFlag(_tasksEnabled, KEY_TASKS_ENABLED, enabled)
 
+    fun setGamesEnabled(enabled: Boolean) = persistFlag(_gamesEnabled, KEY_GAMES_ENABLED, enabled)
+
     fun setNotificationsEnabled(enabled: Boolean) {
         val changed = _notificationsEnabled.value != enabled
         _notificationsEnabled.value = enabled
@@ -564,6 +571,7 @@ class ScheduleStorage(
         val notificationsEnabledBefore = _notificationsEnabled.value
         val notifyMinutesBeforeBefore = _notifyMinutesBefore.value
         val tasksEnabledBefore = _tasksEnabled.value
+        val gamesEnabledBefore = _gamesEnabled.value
         val unlockedThemesBefore = _unlockedThemes.value
         val cyberpunkVariantBefore = _cyberpunkVariant.value
         platformStorage.clearAll()
@@ -584,6 +592,7 @@ class ScheduleStorage(
         _notificationsEnabled.value = notificationsEnabledBefore
         _notifyMinutesBefore.value = notifyMinutesBeforeBefore
         _tasksEnabled.value = tasksEnabledBefore
+        _gamesEnabled.value = gamesEnabledBefore
         _skippedUpdateVersion.value = null
         // Найденные темы — это прогресс пользователя, а не настройки:
         // сброс данных не отнимает квесты. Палитра Киберпанка тоже выбор,
@@ -602,6 +611,7 @@ class ScheduleStorage(
             platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
             platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, notifyMinutesBeforeBefore.toString())
             platformStorage.saveString(KEY_TASKS_ENABLED, tasksEnabledBefore.toString())
+            platformStorage.saveString(KEY_GAMES_ENABLED, gamesEnabledBefore.toString())
             for (overlay in unlockedThemesBefore) {
                 unlockKey(overlay)?.let { platformStorage.saveString(it, "true") }
             }
@@ -634,6 +644,7 @@ class ScheduleStorage(
         private const val KEY_SHOW_ABBREVIATED_NAMES = "uschedule_show_abbreviated_names"
         private const val KEY_APP_THEME = "uschedule_app_theme"
         private const val KEY_TASKS_ENABLED = "uschedule_tasks_enabled"
+        private const val KEY_GAMES_ENABLED = "uschedule_games_enabled"
         private const val KEY_THEME_OVERLAY = "uschedule_theme_overlay"
         private const val KEY_CHEATS_AGREED = "uschedule_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "uschedule_cheats_blocked"

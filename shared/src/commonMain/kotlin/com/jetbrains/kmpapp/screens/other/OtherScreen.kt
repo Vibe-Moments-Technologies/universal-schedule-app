@@ -38,6 +38,7 @@ import com.jetbrains.kmpapp.screens.components.LayeredNavHost
 fun OtherScreen(
     viewModel: OtherViewModel,
     tasksViewModel: com.jetbrains.kmpapp.screens.tasks.TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
+    gamesViewModel: com.jetbrains.kmpapp.screens.games.GamesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val activeSubScreen by viewModel.activeSubScreen.collectAsState()
@@ -72,7 +73,9 @@ fun OtherScreen(
                         onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) },
                         onOpenScheduleDisplay = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_DISPLAY) },
                         onOpenScheduleProgress = { viewModel.navigateToSubScreen(OtherSubScreen.SCHEDULE_PROGRESS) },
-                        onOpenThemedThemes = { viewModel.navigateToSubScreen(OtherSubScreen.THEMED_THEMES) }
+                        onOpenThemedThemes = { viewModel.navigateToSubScreen(OtherSubScreen.THEMED_THEMES) },
+                        onOpenSaperSettings = { viewModel.navigateToSubScreen(OtherSubScreen.SAPER_SETTINGS) },
+                        onOpenTetrisSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TETRIS_SETTINGS) }
                     )
                 }
                 OtherSubScreen.TASK_SETTINGS -> {
@@ -86,6 +89,12 @@ fun OtherScreen(
                 }
                 OtherSubScreen.THEMED_THEMES -> {
                     ThemedThemesScreen(viewModel = viewModel, onBack = back)
+                }
+                OtherSubScreen.SAPER_SETTINGS -> {
+                    SaperSettingsScreen(viewModel = gamesViewModel, onBack = back)
+                }
+                OtherSubScreen.TETRIS_SETTINGS -> {
+                    TetrisSettingsScreen(viewModel = gamesViewModel, onBack = back)
                 }
                 OtherSubScreen.ABOUT -> {
                     AboutScreen(

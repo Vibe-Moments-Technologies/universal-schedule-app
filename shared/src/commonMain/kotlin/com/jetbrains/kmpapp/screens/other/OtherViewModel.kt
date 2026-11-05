@@ -35,6 +35,9 @@ enum class OtherSubScreen(val depth: Int) {
     TEAM(2),
     LICENSES(2),
     DEBUG_SETTINGS(2),
+    // Настройки игр: «Сапёр» и «Тетрис»
+    SAPER_SETTINGS(2),
+    TETRIS_SETTINGS(2),
     EXPERIMENTAL_SETTINGS(3)
 }
 
@@ -50,6 +53,8 @@ private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.TEAM to OtherSubScreen.ABOUT,
     OtherSubScreen.LICENSES to OtherSubScreen.ABOUT,
     OtherSubScreen.DEBUG_SETTINGS to OtherSubScreen.ABOUT,
+    OtherSubScreen.SAPER_SETTINGS to OtherSubScreen.SETTINGS,
+    OtherSubScreen.TETRIS_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.EXPERIMENTAL_SETTINGS to OtherSubScreen.DEBUG_SETTINGS
 )
 
@@ -82,6 +87,7 @@ class OtherViewModel(
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val tasksEnabled: StateFlow<Boolean> = repository.tasksEnabled
+    val gamesEnabled: StateFlow<Boolean> = repository.gamesEnabled
     val analyticsEnabled: StateFlow<Boolean> = repository.analyticsEnabled
     val notificationsEnabled: StateFlow<Boolean> = repository.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = repository.notifyMinutesBefore
@@ -122,6 +128,7 @@ class OtherViewModel(
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
     fun setTasksEnabled(enabled: Boolean) = repository.setTasksEnabled(enabled)
+    fun setGamesEnabled(enabled: Boolean) = repository.setGamesEnabled(enabled)
     fun setAnalyticsEnabled(enabled: Boolean) = repository.setAnalyticsEnabled(enabled)
     fun setNotificationsEnabled(enabled: Boolean) = repository.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = repository.setNotifyMinutesBefore(minutes)

@@ -21,9 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +58,7 @@ enum class AppTab(
 ) {
     SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange, isFixed = true),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
+    GAMES("Игры", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports, isFixed = false),
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
@@ -68,6 +71,7 @@ val AppTab.halloweenEmoji: String
     get() = when (this) {
         AppTab.SCHEDULE -> "\uD83C\uDF83"   // 🎃 тыква
         AppTab.TASKS -> "\u26B0\uFE0F"      // ⚰️ гроб (дедлайны)
+        AppTab.GAMES -> "\uD83D\uDC7B"      // 👻 призрак
         AppTab.OTHER -> "\uD83D\uDC80"      // 💀 череп
     }
 
