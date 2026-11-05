@@ -1,5 +1,3 @@
 TEAM_ID=
-BUNDLE_ID=ru.vibemoments.krasava
-APP_NAME=Красава!
-// AppMetrica (SPM, статическая линковка): без -ObjC ObjC-категории SDK не загрузятся
-OTHER_LDFLAGS = $(inherited) -ObjC
+BUNDLE_ID=ru.vibemoments.universalschedule
+APP_NAME=Расписание
