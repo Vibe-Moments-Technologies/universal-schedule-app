@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -83,7 +84,7 @@ fun TaskSettingsScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = "Настройки задач",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -111,24 +112,24 @@ fun TaskSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Создано предметов:", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${subjects.size}", fontWeight = FontWeight.Bold)
+                    GlitchText("Создано предметов:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    GlitchText("${subjects.size}", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Всего задач:", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${tasks.size}", fontWeight = FontWeight.Bold)
+                    GlitchText("Всего задач:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    GlitchText("${tasks.size}", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Завершено:", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${tasks.count { it.status.isFinished }}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    GlitchText("Завершено:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    GlitchText("${tasks.count { it.status.isFinished }}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             }
 
@@ -138,7 +139,7 @@ fun TaskSettingsScreen(
                 subtitle = "Удаление всех сохраненных предметов, задач и чеклистов",
                 icon = Icons.Default.DeleteSweep
             ) {
-                Text(
+                GlitchText(
                     text = "Действие необратимо. Будут удалены все добавленные вами предметы и задания.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -154,7 +155,7 @@ fun TaskSettingsScreen(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
+                    GlitchText(
                         text = "Очистить все задачи и предметы",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer
@@ -169,8 +170,8 @@ fun TaskSettingsScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Очистить все задачи и предметы?") },
-            text = { Text("Все сохраненные предметы, задачи, подзадачи и чеклисты будут безвозвратно удалены.") },
+            title = { GlitchText("Очистить все задачи и предметы?") },
+            text = { GlitchText("Все сохраненные предметы, задачи, подзадачи и чеклисты будут безвозвратно удалены.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -181,12 +182,12 @@ fun TaskSettingsScreen(
                         }
                     }
                 ) {
-                    Text("Удалить всё", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    GlitchText("Удалить всё", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Отмена")
+                    GlitchText("Отмена")
                 }
             }
         )
@@ -214,14 +215,14 @@ private fun TaskSettingsCard(
                     modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
+                GlitchText(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
+            GlitchText(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

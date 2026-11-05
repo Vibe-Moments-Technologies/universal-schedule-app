@@ -1,0 +1,48 @@
+name: 🧪 Widget Logic Tests
+
+# Unit-тесты чистой логики виджета (движок выбора актуальной пары, разбор
+# аудитории, границы занятий). Исходники лежат в
+# iosApp/WidgetKitLogic/Sources/WidgetKitLogic и подключены к таргету
+# расширения по абсолютному пути в pbxproj — один код, без дублирования.
+#
+# Запускается при изменениях логики виджетов; Swift недоступен на Windows,
+# поэтому проверка идёт на macOS-раннере.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'iosApp/WidgetKitLogic/**'
+  pull_request:
+    paths:
+      - 'iosApp/WidgetKitLogic/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: widget-logic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 🧪 WidgetKitLogic
+    runs-on: macos-26
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: 🧪 Run tests
+        working-directory: iosApp/WidgetKitLogic
+        run: |
+          set -o pipefail
+          # Вывод целиком, но с явным итогом: строка "Executed N tests"
+          # позволяет понять, что тесты действительно шли, а не пропустились.
+          swift test 2>&1 | tee /tmp/test.log | tail -40
+          grep -E "Executed [0-9]+ tests" /tmp/test.log | tail -1 || true

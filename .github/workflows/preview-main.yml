@@ -14,6 +14,7 @@ on:
       - 'shared/**'
       - 'androidApp/**'
       - 'iosApp/**'
+      - 'maps/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -86,23 +87,30 @@ jobs:
           validate-wrappers: false
 
       - name: 🔨 Run all tests + Build Android APK
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: ./gradlew :shared:allTests :androidApp:assembleDebug --stacktrace
 
       - name: 🏷️ Prepare preview APK
         run: |
           mkdir -p dist
-          cp androidApp/build/outputs/apk/debug/*.apk dist/UniversalSchedule-preview.apk
+          cp androidApp/build/outputs/apk/debug/*.apk dist/Krasava-preview.apk
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UniversalSchedule-preview-APK
-          path: dist/UniversalSchedule-preview.apk
+          name: Krasava-preview-APK
+          path: dist/Krasava-preview.apk
           if-no-files-found: error
 
   build_ipa:
     name: 🍏 Build iOS Unsigned IPA (dev)
-    runs-on: macos-15
+    # macos-26 даёт Xcode 26 и SDK iOS 26+: только там объявлено семейство
+    # виджетов systemExtraLargePortrait (Extra Large для iPhone).
+    runs-on: macos-26
     needs: resolve
     steps:
       - name: 📚 Checkout Repository
@@ -132,17 +140,42 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: false
+          # Кеш отключён: генерация аксессоров Compose-ресурсов отдавала
+          # старый Res.kt без новых PNG (Unresolved reference vk_avatar_*).
+          cache-disabled: true
         env:
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
       - name: 🛠️ Set Xcode Version
         run: |
-          if [ -d "/Applications/Xcode_16.4.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
-          elif [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          # Требуется Xcode 26: только в этом SDK собраны все API, которые
+          # использует виджет (widgetRenderingMode и семейства размеров).
+          # Фолбэков нет намеренно: честнее упасть здесь с понятным
+          # сообщением, чем выпустить сборку на устаревшем SDK.
+          FOUND=""
+          for V in 26.6 26.5 26.4 26.3; do
+            if [ -d "/Applications/Xcode_${V}.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_${V}.app/Contents/Developer"
+              FOUND="$V"
+              break
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error::Xcode 26 не найден на раннере. Доступно:"
+            ls -d /Applications/Xcode*.app || true
+            exit 1
           fi
           xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: 🧪 Shared commonTest (iOS simulator)
+        run: |
+          # commonTest модуля shared подключён только к iOS-таргетам: на ubuntu
+          # :shared:allTests даёт NO-SOURCE, и тесты (DateUtils, парсер iCal,
+          # движки игр, компаратор версий) не выполнялись в CI вовсе.
+          # macOS-раннер прогоняет их на симуляторе. Ставим ДО сборки приложения,
+          # чтобы падение тестов не ждало двадцатиминутную сборку.
+          ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
       - name: 🔨 Build iOS App (no codesign)
         run: |
@@ -153,9 +186,36 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            DEBUG_INFORMATION_FORMAT=dwarf \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build
+
+      - name: 🕯️ Upload dSYM to Sentry
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          cd iosApp
+          sentry-cli debug-files upload --org l1ratch-dev --project krasava-app \
+            build/Build/Products/Release-iphoneos \
+            ../shared/build/xcode-frameworks
+
+      - name: 🔏 Ad-hoc подпись с entitlements (App Group для виджета)
+        # Схема из docs/widgets-with-custom-certificates: ad-hoc (identity "-")
+        # не требует сертификата, но вшивает entitlements в бинарник. Инструмент
+        # переподписи (GBox/Feather/ESign) увидит заявленную App Group и
+        # сохранит её на .appex — иначе виджет после переподписи остаётся
+        # без общего контейнера. Вложенные бандлы подписываются ПЕРВЫМИ.
+        run: |
+          cd iosApp
+          APP_PATH=$(find build -name "*.app" -type d | head -n 1)
+          codesign --force --sign - --entitlements KrasavaWidget/KrasavaWidget.entitlements "$APP_PATH/PlugIns/KrasavaWidget.appex"
+          codesign --force --sign - --entitlements iosApp/iosApp.entitlements "$APP_PATH"
+          echo "--- entitlements .appex ---"
+          codesign -d --entitlements :- "$APP_PATH/PlugIns/KrasavaWidget.appex"
+          echo "--- entitlements .app ---"
+          codesign -d --entitlements :- "$APP_PATH"
 
       - name: 📦 Package Unsigned IPA
         run: |
@@ -164,15 +224,15 @@ jobs:
           APP_PATH=$(find build -name "*.app" -type d | head -n 1)
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
-          zip -r ../UniversalSchedule-preview.ipa Payload
+          zip -r ../Krasava-preview.ipa Payload
           rm -rf Payload
           cd ..
 
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UniversalSchedule-preview-IPA
-          path: UniversalSchedule-preview.ipa
+          name: Krasava-preview-IPA
+          path: Krasava-preview.ipa
           if-no-files-found: error
 
   publish_preview:
@@ -187,14 +247,14 @@ jobs:
       - name: 📥 Download APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: UniversalSchedule-preview-APK
+          name: Krasava-preview-APK
           path: download_apk
         continue-on-error: true
 
       - name: 📥 Download IPA Artifact
         uses: actions/download-artifact@v4
         with:
-          name: UniversalSchedule-preview-IPA
+          name: Krasava-preview-IPA
           path: download_ipa
         continue-on-error: true
 
@@ -217,6 +277,34 @@ jobs:
           [ -n "$IPA" ] && ARGS="$ARGS --ipa $IPA"
           python tools/publish_release.py --channel preview --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" $ARGS
 
-  # Бета-система (GBox-источник apps-beta.json) отключена и скрыта:
-  # dev-сборки видны только в rolling-релизе `preview`.
+  update_preview_feed:
+    name: 📡 Update GBox Beta Source (rolling)
+    runs-on: ubuntu-latest
+    needs: [resolve, publish_preview]
+    if: needs.publish_preview.result == 'success'
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
 
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📝 Generate apps-beta.json (rolling GBox source)
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+          BUILD: ${{ needs.resolve.outputs.build_id }}
+          SHA: ${{ needs.resolve.outputs.commit_sha }}
+        run: python tools/update_version_feed.py --channel preview --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" --out-dir dist_version
+
+      - name: 📋 Copy remote config
+        run: cp config.json dist_version/
+
+      - name: 🚀 Deploy feeds to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist_version
+          publish_branch: gh-pages
+          keep_files: true

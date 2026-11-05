@@ -1,8 +1,11 @@
 package com.jetbrains.kmpapp.screens.other
 
 import org.jetbrains.compose.resources.DrawableResource
-import com.jetbrains.kmpapp.resources.Res
-import com.jetbrains.kmpapp.resources.team_l1ratch
+import kmp_app_template.shared.generated.resources.Res
+import kmp_app_template.shared.generated.resources.team_kirasunshine
+import kmp_app_template.shared.generated.resources.team_kristalina5058
+import kmp_app_template.shared.generated.resources.team_l1ratch
+import kmp_app_template.shared.generated.resources.team_prosto_max
 
 /**
  * Команда проекта — декларативный список в коде (не «конструктор»):
@@ -26,28 +29,41 @@ data class TeamMember(
     val department: String,
     val email: String? = null,
     val avatar: DrawableResource? = null,
-    val links: List<TeamLink> = emptyList(),
-    /** Текстовое описание вместо ссылок/почты — для собирательных участников. */
-    val description: String? = null
+    val links: List<TeamLink> = emptyList()
 )
 
 /** Отделы для группировки; карточки выводятся по этому порядку. */
-val teamDepartments = listOf("Разработка")
+val teamDepartments = listOf("Разработка", "Карты")
 
 val projectTeam = listOf(
     TeamMember(
         name = "Линк (l1ratch)",
-        role = "Автор и разработчик",
+        role = "Разработчик",
         department = "Разработка",
         email = "connect@l1ratch.ru",
         avatar = Res.drawable.team_l1ratch,
         links = listOf(TeamLink(TeamLinkType.GITHUB, "https://github.com/l1ratch"))
     ),
     TeamMember(
-        name = "Контрибьютер",
-        role = "Сообщество проекта",
+        name = "prosto-max",
+        role = "Разработчик",
         department = "Разработка",
-        description = "Все, кто предлагал идеи и функции, находил и сообщал о проблемах, " +
-            "тестировал сборки и помогал делать приложение лучше. Спасибо каждому из вас! 🙌"
+        avatar = Res.drawable.team_prosto_max,
+        links = listOf(TeamLink(TeamLinkType.GITHUB, "https://github.com/prosto-max"))
+    ),
+    TeamMember(
+        name = "KiraSunshine",
+        // Карты + дизайн: владелец подтвердил вторую роль.
+        role = "Картограф · Дизайнер",
+        department = "Карты",
+        avatar = Res.drawable.team_kirasunshine,
+        links = listOf(TeamLink(TeamLinkType.GITHUB, "https://github.com/KiraSunshine"))
+    ),
+    TeamMember(
+        name = "kristalina5058",
+        role = "Картограф",
+        department = "Карты",
+        avatar = Res.drawable.team_kristalina5058,
+        links = listOf(TeamLink(TeamLinkType.GITHUB, "https://github.com/kristalina5058"))
     )
 )

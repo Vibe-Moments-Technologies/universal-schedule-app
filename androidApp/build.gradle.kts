@@ -7,11 +7,12 @@ plugins {
 }
 
 dependencies {
-    // Всё остальное (compose, ktor-okhttp и т.д.) приходит транзитивно из
-    // shared — так же, как material3, который здесь никогда не объявлялся.
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.compose.uiToolingPreview)
+    implementation(libs.compose.foundation)
+    implementation(libs.ktor.client.okhttp)
 }
 
 android {
@@ -19,12 +20,12 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "ru.vibemoments.universalschedule"
+        applicationId = "ru.vibemoments.krasava"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (project.findProperty("buildNumber") as? String)?.toIntOrNull()
             ?: System.getenv("BUILD_NUMBER")?.toIntOrNull()
-            ?: 1
+            ?: 32
         // CI подставляет версию канала через tools/versioning.py; в репо — базовая версия линии разработки
         versionName = "26.0.0"
     }
@@ -39,7 +40,7 @@ android {
                     writeBytes(Base64.getDecoder().decode(b64))
                 }
                 storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "universal-schedule"
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "krasava"
                 keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
             }
         }

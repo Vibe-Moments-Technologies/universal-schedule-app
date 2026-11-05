@@ -59,4 +59,33 @@ class DateUtilsTest {
             SemesterWeeks.set(emptyList())
         }
     }
+
+    // Сезон хэллоуинской темы: 28 октября — 3 ноября включительно
+    // (±3 дня от 31 октября). Границы проверяем с обеих сторон: окно
+    // переходит через границу месяцев, поэтому «31 + 3» нельзя считать
+    // арифметикой дней месяца.
+    @Test
+    fun halloweenSeasonBoundaries() {
+        // До сезона.
+        assertFalse(DateUtils.isHalloweenSeason(LocalDate(2026, 10, 27)))
+        // Первый день сезона.
+        assertTrue(DateUtils.isHalloweenSeason(LocalDate(2026, 10, 28)))
+        // Сам праздник.
+        assertTrue(DateUtils.isHalloweenSeason(LocalDate(2026, 10, 31)))
+        // Переход через границу месяцев внутри сезона.
+        assertTrue(DateUtils.isHalloweenSeason(LocalDate(2026, 11, 1)))
+        // Последний день сезона.
+        assertTrue(DateUtils.isHalloweenSeason(LocalDate(2026, 11, 3)))
+        // После сезона.
+        assertFalse(DateUtils.isHalloweenSeason(LocalDate(2026, 11, 4)))
+    }
+
+    @Test
+    fun halloweenSeasonIsYearLocal() {
+        // В другие годы окно то же: конец октября — начало ноября.
+        assertTrue(DateUtils.isHalloweenSeason(LocalDate(2027, 10, 29)))
+        assertFalse(DateUtils.isHalloweenSeason(LocalDate(2027, 10, 26)))
+        // Летом тема выключена.
+        assertFalse(DateUtils.isHalloweenSeason(LocalDate(2026, 7, 31)))
+    }
 }

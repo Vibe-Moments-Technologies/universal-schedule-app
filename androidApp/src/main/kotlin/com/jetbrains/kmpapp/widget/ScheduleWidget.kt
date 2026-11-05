@@ -2,6 +2,7 @@ package com.jetbrains.kmpapp.widget
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -46,6 +47,7 @@ import com.jetbrains.kmpapp.data.widget.WidgetPinFeedback
 import com.jetbrains.kmpapp.data.widget.WidgetSelectionEngine
 import com.jetbrains.kmpapp.data.widget.WidgetState
 import com.jetbrains.kmpapp.data.widget.WidgetThemeCodec
+import com.jetbrains.kmpapp.data.widget.WidgetTypeColor
 import com.jetbrains.kmpapp.data.widget.consumePendingWidgetConfig
 
 /**
@@ -108,11 +110,16 @@ class ScheduleWidget : GlanceAppWidget() {
         val theme = WidgetThemeCodec.decode(ScheduleWidgetStore.readTheme(context))
         val palette = theme?.toWidgetPalette()
             ?: if (context.isNightMode()) DarkWidgetPalette else LightWidgetPalette
+        // Пользовательские цвета типов занятий из снапшота: тот же контракт,
+        // что у iOS-виджета (ключ — короткий бейдж типа, ARGB обеих схем).
+        // Пустая карта — стандартные цвета палитры.
+        val typeColors = payload?.typeColorOverrides ?: emptyMap()
         val isDark = context.isNightMode()
         provideContent {
             WidgetRoot(
                 state = state,
                 palette = palette,
+                typeColors = typeColors,
                 isDark = isDark,
                 shortNames = shortNames
             )
@@ -141,6 +148,7 @@ internal fun Context.isNightMode(): Boolean =
 private fun WidgetRoot(
     state: WidgetState,
     palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor> = emptyMap(),
     isDark: Boolean = false,
     shortNames: Boolean = false
 ) {
@@ -166,11 +174,11 @@ private fun WidgetRoot(
         if (state.primary == null) {
             EmptyContent(state, palette)
         } else if (compact) {
-            SmallContent(state, palette, shortNames, widthDp, heightDp)
+            SmallContent(state, palette, typeColors, isDark, shortNames, widthDp, heightDp)
         } else if (wideShort) {
-            MediumContent(state, palette, shortNames, heightDp)
+            MediumContent(state, palette, typeColors, isDark, shortNames, heightDp)
         } else {
-            LargeContent(state, palette, shortNames, widthDp, heightDp, extra)
+            LargeContent(state, palette, typeColors, isDark, shortNames, widthDp, heightDp, extra)
         }
     }
 }
@@ -181,6 +189,8 @@ private fun WidgetRoot(
 private fun SmallContent(
     state: WidgetState,
     palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor>,
+    isDark: Boolean,
     shortNames: Boolean,
     widthDp: Float,
     heightDp: Float
@@ -192,6 +202,8 @@ private fun SmallContent(
             label = state.compactStatusLabel,
             type = primary.type,
             palette = palette,
+            typeColors = typeColors,
+            isDark = isDark,
             sizeSp = 9
         )
         Spacer(modifier = GlanceModifier.height(if (tight) 4.dp else 8.dp))
@@ -220,6 +232,8 @@ private fun SmallContent(
 private fun MediumContent(
     state: WidgetState,
     palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor>,
+    isDark: Boolean,
     shortNames: Boolean,
     heightDp: Float
 ) {
@@ -234,6 +248,8 @@ private fun MediumContent(
                 label = state.compactStatusLabel,
                 type = primary.type,
                 palette = palette,
+                typeColors = typeColors,
+                isDark = isDark,
                 sizeSp = 9
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
@@ -281,6 +297,8 @@ private fun MediumContent(
 private fun LargeContent(
     state: WidgetState,
     palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor>,
+    isDark: Boolean,
     shortNames: Boolean,
     widthDp: Float,
     heightDp: Float,
@@ -329,6 +347,8 @@ private fun LargeContent(
             label = state.countdownLabel ?: state.statusLabel.orEmpty(),
             type = primary.type,
             palette = palette,
+            typeColors = typeColors,
+            isDark = isDark,
             sizeSp = 10
         )
         Spacer(modifier = GlanceModifier.height(2.dp))
@@ -456,6 +476,8 @@ private fun StatusRow(
     label: String,
     type: String,
     palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor>,
+    isDark: Boolean,
     sizeSp: Int
 ) {
     Row(
@@ -470,7 +492,7 @@ private fun StatusRow(
             modifier = GlanceModifier.defaultWeight()
         )
         if (type.isNotBlank()) {
-            TypeBadge(type, palette)
+            TypeBadge(type, palette, typeColors, isDark)
         }
     }
 }
@@ -478,13 +500,32 @@ private fun StatusRow(
 @androidx.compose.runtime.Composable
 private fun TypeBadge(
     type: String,
-    palette: WidgetPalette
+    palette: WidgetPalette,
+    typeColors: Map<String, WidgetTypeColor>,
+    isDark: Boolean
 ) {
     val isPractice = type == "ПР" || type == "ЛАБ" || type == "ЛБ"
-    val textColor: ColorProvider = if (isPractice) palette.badgeText else palette.accent
+    // Пользовательское переопределение цвета типа (снапшот, тот же контракт,
+    // что у iOS): ARGB знаковый — маска снимает знак, альфа берётся
+    // полупрозрачной подложкой бейджа, как в карточках приложения.
+    val overrideColor: Color? = typeColors[type]?.let { override ->
+        val argb = (if (isDark) override.dark else override.light).toLong() and 0xFFFFFF
+        Color(argb)
+    }
+    val textColor: ColorProvider = when {
+        overrideColor != null -> ColorProvider(overrideColor)
+        isPractice -> palette.badgeText
+        else -> palette.accent
+    }
+    val badgeBackground: ColorProvider = when {
+        overrideColor != null -> ColorProvider(
+            overrideColor.copy(alpha = if (isDark) 0.22f else 0.16f)
+        )
+        else -> palette.badgeBackground
+    }
     Box(
         modifier = GlanceModifier
-            .background(palette.badgeBackground)
+            .background(badgeBackground)
             .cornerRadius(6.dp)
             .padding(horizontal = 5.dp, vertical = 2.dp)
     ) {

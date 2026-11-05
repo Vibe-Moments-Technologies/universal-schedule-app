@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +65,7 @@ fun LicensesScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = "Лицензии и источники",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -101,8 +102,8 @@ fun LicensesScreen(
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                 LicenseItem(
-                    title = "AppMetrica SDK",
-                    description = "Проприетарная лицензия Yandex."
+                    title = "Sentry SDK",
+                    description = "MIT License — Functional Software, Inc."
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                 LicenseItem(
@@ -111,10 +112,26 @@ fun LicensesScreen(
                 )
             }
 
-            SectionCard(title = "Данные") {
+            SectionCard(title = "Данные и карты") {
                 LicenseItem(
                     title = "Данные расписания занятий",
-                    description = "Вводятся пользователем локально и принадлежат их владельцам (учебные заведения, преподаватели)."
+                    description = "Официальный Schedule API университета."
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                LicenseItem(
+                    title = "Схемы и карты корпусов",
+                    description = "Студенческие сервисы университета."
+                )
+            }
+
+            // Отдельный блок внизу (решение владельца): политика нужна
+            // в UI приложения — Google Play требует, чтобы она была
+            // доступна из самого приложения, не только в сторе.
+            SectionCard(title = "Политика конфиденциальности") {
+                LicenseItem(
+                    title = "Открыть политику",
+                    description = "Как приложение обрабатывает данные.",
+                    onClick = { uriHandler.openUri("https://vibe-moments-technologies.github.io/krasava-app/privacy.html") }
                 )
             }
 
@@ -134,7 +151,7 @@ private fun SectionCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Text(
+            GlitchText(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -161,14 +178,14 @@ private fun LicenseItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
+            GlitchText(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
             description?.let {
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
+                GlitchText(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

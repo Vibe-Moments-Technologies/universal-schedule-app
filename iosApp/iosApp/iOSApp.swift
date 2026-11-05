@@ -1,5 +1,4 @@
 import SwiftUI
-import AppMetricaCore
 import Shared
 import WidgetKit
 
@@ -36,11 +35,8 @@ struct iOSApp: App {
 
     init() {
         KoinKt.doInitKoin()
-        // Ключ синхронизирован с AppAnalytics.API_KEY (shared) — менять вместе.
-        if let configuration = AppMetricaConfiguration(apiKey: "388946ca-aae3-4c1c-9bce-9f390bc0f5ca") {
-            AppMetrica.activate(with: configuration)
-        }
-        AppAnalytics.shared.setEngine(engine: AppMetricaEngine())
+        // Диагностика (Sentry) поднимется сама, если включён тумблер в отладке.
+        AppDiagnostics.shared.setEngine(engine: SentryDiagnosticsEngine())
         AppIconManager.shared.setEngine(newEngine: AppIconEngine())
         // Держим ссылку: движок нужен и после регистрации (уборка с прошлого
         // запуска) — до первого планирования, чтобы не гонять с ним гонку.
@@ -58,7 +54,7 @@ struct iOSApp: App {
                 .onAppear { WidgetSync.push() }
         }
         .onChange(of: scenePhase) { phase in
-            // Перед уходом в фон и по возврату — виджет всегда со свежим снимком.
+            // Перед уходом в фон и по возврате — виджет всегда со свежим снимком.
             if phase == .background || phase == .active {
                 WidgetSync.push()
             }

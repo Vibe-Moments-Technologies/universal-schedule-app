@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.schedule
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
+import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -53,14 +55,18 @@ internal fun DaySchedulePage(
     date: LocalDate,
     slots: List<ScheduleSlot>,
     listState: LazyListState,
+    errorMessage: String?,
     currentMinutesState: State<Int>?,
     showLessonProgress: Boolean,
     showEmptyLessonProgress: Boolean,
     showBreakProgress: Boolean,
     showAbbreviatedNames: Boolean,
+    scheduleTargetType: ScheduleTargetType,
+    noteTargetId: Int,
     autoScrollToCurrentLesson: Boolean,
     canAutoScroll: (LocalDate) -> Boolean,
     markAutoScrolled: (LocalDate) -> Unit,
+    onRetry: () -> Unit,
     onLessonClick: (Lesson) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -157,7 +163,7 @@ internal fun DaySchedulePage(
         var burst by remember { mutableIntStateOf(0) }
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
+                GlitchText(
                     "🎉",
                     fontSize = 48.sp,
                     // Без ripple: квадратная анимация нажатия портила эмодзи.
@@ -167,9 +173,14 @@ internal fun DaySchedulePage(
                     ) { burst++ }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("На этот день пар нет", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                GlitchText("На этот день пар нет", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Отличный повод отдохнуть!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                GlitchText("Отличный повод отдохнуть!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    GlitchText(errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, textAlign = TextAlign.Center)
+                    IconButton(onClick = onRetry) { Icon(Icons.Default.Refresh, contentDescription = "Повторить") }
+                }
             }
             ConfettiBurst(trigger = burst)
         }
@@ -206,7 +217,9 @@ internal fun DaySchedulePage(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showEmptyLessonProgress = showEmptyLessonProgress,
-                    showAbbreviatedNames = showAbbreviatedNames
+                    showAbbreviatedNames = showAbbreviatedNames,
+                    scheduleTargetType = scheduleTargetType,
+                    noteTargetId = noteTargetId
                 )
             }
         }

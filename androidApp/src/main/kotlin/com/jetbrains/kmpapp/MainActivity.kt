@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
+import androidx.compose.runtime.LaunchedEffect
 import com.jetbrains.kmpapp.notifications.AndroidNotificationsEngine
 import com.jetbrains.kmpapp.widget.ScheduleWidgetStore
 import kotlinx.coroutines.CoroutineScope
@@ -26,9 +27,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Разрешение POST_NOTIFICATIONS (API 33+) просится только в момент,
         // когда пользователь включает тумблер напоминаний в настройках.
+        // lifecycle-контекст обязателен: launch вне RESUMED кидает
+        // IllegalStateException (краш «при первой установке»).
         AndroidNotificationsEngine.permissionRequester = {
             if (Build.VERSION.SDK_INT >= 33 &&
-                !NotificationManagerCompat.from(this).areNotificationsEnabled()
+                !NotificationManagerCompat.from(this).areNotificationsEnabled() &&
+                lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
             ) {
                 requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -43,6 +47,11 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             App()
+            // App() при композиции подключает WidgetBridge к репозиторию —
+            // после этого можно отдать снапшот виджету (аналог iOS WidgetSync).
+            LaunchedEffect(Unit) {
+                ScheduleWidgetStore.publish(this@MainActivity)
+            }
         }
     }
 
@@ -56,10 +65,6 @@ class MainActivity : ComponentActivity() {
         publishWidgetSnapshot()
     }
 
-    /**
-     * Снапшот для виджета публикуется при возврате и уходе в фон — так же,
-     * как iOS зовёт `WidgetSync.push()` по `scenePhase`.
-     */
     private fun publishWidgetSnapshot() {
         val appContext = applicationContext
         CoroutineScope(Dispatchers.IO).launch {

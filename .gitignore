@@ -67,8 +67,10 @@ images/
 *.keystore
 *.jks
 *.p12
+.tmp-ghpages/
 
-# Release signing (never commit)
-release-keys/
-
-.acl-recovery/
+# Internal docs - not for git
+ROOM_FACTS_TZ.md
+.tmp-ghpages/
+# Mirea Ninja API research - local only
+NINJA_API_NOTES.md

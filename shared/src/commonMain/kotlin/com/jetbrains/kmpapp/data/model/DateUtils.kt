@@ -19,13 +19,26 @@ object DateUtils {
     }
 
     fun getWeekDates(anchorDate: LocalDate): List<LocalDate> {
-        val monday = anchorDate.minus(DatePeriod(days = anchorDate.dayOfWeek.ordinal))
+        val dayOfWeekIndex = when (anchorDate.dayOfWeek) {
+            DayOfWeek.MONDAY -> 0
+            DayOfWeek.TUESDAY -> 1
+            DayOfWeek.WEDNESDAY -> 2
+            DayOfWeek.THURSDAY -> 3
+            DayOfWeek.FRIDAY -> 4
+            DayOfWeek.SATURDAY -> 5
+            DayOfWeek.SUNDAY -> 6
+        }
+        val monday = anchorDate.minus(DatePeriod(days = dayOfWeekIndex))
         return (0..6).map { monday.plus(DatePeriod(days = it)) }
     }
 
     /**
-     * Сезон хэллоуинской темы: за 3 дня до 31 октября и через 3 дня после,
-     * то есть 28 октября — 3 ноября включительно, по локальной дате устройства.
+     * Попадает ли дата в сезон хэллоуинской темы: за 3 дня до 31 октября
+     * и через 3 дня после, включительно с обеих сторон (28 октября — 3 ноября).
+     *
+     * Границы считаем через [DatePeriod], а не арифметикой дней месяца:
+     * окно переходит через границу месяцев (октябрь → ноябрь), и ручный
+     * подсчёт «31 + 3» дал бы несуществующее «34 октября».
      */
     fun isHalloweenSeason(date: LocalDate): Boolean {
         val holiday = LocalDate(date.year, Month.OCTOBER, 31)
@@ -35,8 +48,8 @@ object DateUtils {
     }
 
     fun getWeekInfo(date: LocalDate): SemesterWeekInfo {
-        // Источник истины — маркеры недель активного семестра; расчёт ниже —
-        // фолбэк, пока семестр не собран или не покрывает дату.
+        // Источник истины — маркеры недель из iCal-фида; расчёт ниже — фолбэк,
+        // пока фид не загружен или не покрывает дату.
         val weekNumber = SemesterWeeks.weekNumberFor(date) ?: computedWeekNumber(date)
         return SemesterWeekInfo(
             weekNumber = weekNumber.coerceAtLeast(1),
@@ -112,20 +125,6 @@ object DateUtils {
         return now.hour * 60 + now.minute
     }
 
-    /**
-     * «06.10.2026 14:23» — метка времени рекорда игр,
-     * в местном часовом поясе устройства.
-     */
-    fun formatDateTime(epochMillis: Long): String {
-        val moment = kotlin.time.Instant.fromEpochMilliseconds(epochMillis)
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-        val day = moment.dayOfMonth.toString().padStart(2, '0')
-        val month = moment.monthNumber.toString().padStart(2, '0')
-        val hour = moment.hour.toString().padStart(2, '0')
-        val minute = moment.minute.toString().padStart(2, '0')
-        return "$day.$month.${moment.year} $hour:$minute"
-    }
-
     fun parseTimeToMinutes(timeStr: String): Int? {
         val parts = timeStr.trim().split(':')
         if (parts.size != 2) return null
@@ -148,6 +147,29 @@ object DateUtils {
             return (passed / total).coerceIn(0.01f, 1.0f)
         }
         return null
+    }
+
+/**
+     * Дата и время по метке времени Unix в формате «дд.ММ.гггг чч:мм»
+     * в местном часовом поясе устройства.
+     */
+    fun formatDateTime(epochMillis: Long): String {
+        val moment = kotlin.time.Instant.fromEpochMilliseconds(epochMillis)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+        val day = moment.dayOfMonth.toString().padStart(2, '0')
+        val month = moment.monthNumber.toString().padStart(2, '0')
+        val hour = moment.hour.toString().padStart(2, '0')
+        val minute = moment.minute.toString().padStart(2, '0')
+        return "$day.$month.${moment.year} $hour:$minute"
+    }
+
+    /**
+     * Returns remaining minutes for a lesson if it's currently ongoing, or null otherwise.
+     */
+    fun getRemainingLessonMinutes(endTime: String, currentMinutes: Int = currentTimeMinutes()): Int? {
+        val end = parseTimeToMinutes(endTime) ?: return null
+        val remaining = end - currentMinutes
+        return if (remaining > 0) remaining else null
     }
 }
 

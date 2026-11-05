@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.tasks
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -113,7 +114,7 @@ internal fun SubjectEditModalSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                GlitchText(
                     text = if (initialSubject == null) "Новый предмет" else "Редактировать предмет",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -140,8 +141,8 @@ internal fun SubjectEditModalSheet(
                         }
                     }
                 },
-                label = { Text("Название предмета *") },
-                placeholder = { Text("Например: Математический анализ") },
+                label = { GlitchText("Название предмета *") },
+                placeholder = { GlitchText("Например: Математический анализ") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -151,8 +152,8 @@ internal fun SubjectEditModalSheet(
             OutlinedTextField(
                 value = shortCode,
                 onValueChange = { if (it.length <= 5) shortCode = it.uppercase() },
-                label = { Text("Короткий код (2-4 буквы) *") },
-                placeholder = { Text("МА") },
+                label = { GlitchText("Короткий код (2-4 буквы) *") },
+                placeholder = { GlitchText("МА") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -160,7 +161,7 @@ internal fun SubjectEditModalSheet(
 
             // Color Palette Selector
             Column {
-                Text("Цвет предмета", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Цвет предмета", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -192,7 +193,7 @@ internal fun SubjectEditModalSheet(
 
             // Assessment Type
             Column {
-                Text("Форма итогового контроля", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Форма итогового контроля", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier
@@ -204,7 +205,7 @@ internal fun SubjectEditModalSheet(
                         FilterChip(
                             selected = assessmentType == at,
                             onClick = { assessmentType = at },
-                            label = { Text(at.displayName, fontSize = 11.5.sp) },
+                            label = { GlitchText(at.displayName, fontSize = 11.5.sp) },
                             shape = RoundedCornerShape(10.dp)
                         )
                     }
@@ -213,7 +214,7 @@ internal fun SubjectEditModalSheet(
 
             // Importance
             Column {
-                Text("Важность предмета", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Важность предмета", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -224,7 +225,7 @@ internal fun SubjectEditModalSheet(
                             selected = importance == imp,
                             onClick = { importance = imp },
                             label = {
-                                Text(
+                                GlitchText(
                                     text = imp.displayName,
                                     fontSize = 11.sp,
                                     modifier = Modifier.fillMaxWidth(),
@@ -242,7 +243,7 @@ internal fun SubjectEditModalSheet(
             OutlinedTextField(
                 value = teacher,
                 onValueChange = { teacher = it },
-                label = { Text("Преподаватель (опционально)") },
+                label = { GlitchText("Преподаватель (опционально)") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -252,7 +253,7 @@ internal fun SubjectEditModalSheet(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text("Аудитория или ссылка на СДО") },
+                label = { GlitchText("Аудитория или ссылка на СДО") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -273,7 +274,7 @@ internal fun SubjectEditModalSheet(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("Сохранить", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                GlitchText("Сохранить", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -344,7 +345,7 @@ internal fun TaskEditModalSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                GlitchText(
                     text = if (taskToEdit == null) "Новое задание" else "Редактировать задание",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -359,7 +360,7 @@ internal fun TaskEditModalSheet(
 
             // Subject Selector Chips
             Column {
-                Text("Предмет", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Предмет", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier
@@ -373,7 +374,7 @@ internal fun TaskEditModalSheet(
                         FilterChip(
                             selected = isSelected,
                             onClick = { selectedSubjectId = subj.id },
-                            label = { Text(subj.name, fontSize = 11.5.sp) },
+                            label = { GlitchText(subj.name, fontSize = 11.5.sp) },
                             shape = RoundedCornerShape(10.dp)
                         )
                     }
@@ -384,8 +385,8 @@ internal fun TaskEditModalSheet(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Название задачи *") },
-                placeholder = { Text("Например: Лабораторная №2") },
+                label = { GlitchText("Название задачи *") },
+                placeholder = { GlitchText("Например: Лабораторная №2") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -395,8 +396,8 @@ internal fun TaskEditModalSheet(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Описание или требования") },
-                placeholder = { Text("Вариант, файлы, дедлайн...") },
+                label = { GlitchText("Описание или требования") },
+                placeholder = { GlitchText("Вариант, файлы, дедлайн...") },
                 maxLines = 3,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -404,7 +405,7 @@ internal fun TaskEditModalSheet(
 
             // Category
             Column {
-                Text("Категория", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Категория", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier
@@ -416,7 +417,7 @@ internal fun TaskEditModalSheet(
                         FilterChip(
                             selected = category == cat,
                             onClick = { category = cat },
-                            label = { Text(cat.displayName, fontSize = 11.sp) },
+                            label = { GlitchText(cat.displayName, fontSize = 11.sp) },
                             shape = RoundedCornerShape(10.dp)
                         )
                     }
@@ -425,7 +426,7 @@ internal fun TaskEditModalSheet(
 
             // Priority
             Column {
-                Text("Приоритет", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Приоритет", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -436,7 +437,7 @@ internal fun TaskEditModalSheet(
                             selected = priority == prio,
                             onClick = { priority = prio },
                             label = {
-                                Text(
+                                GlitchText(
                                     text = prio.displayName,
                                     fontSize = 11.sp,
                                     modifier = Modifier.fillMaxWidth(),
@@ -452,7 +453,7 @@ internal fun TaskEditModalSheet(
 
             // Subtasks checklist builder
             Column {
-                Text("Чеклист шагов сдачи", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                GlitchText("Чеклист шагов сдачи", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
 
                 subtasks.forEachIndexed { index, subtaskTitle ->
@@ -462,9 +463,9 @@ internal fun TaskEditModalSheet(
                             .padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("${index + 1}.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        GlitchText("${index + 1}.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(subtaskTitle, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        GlitchText(subtaskTitle, fontSize = 13.sp, modifier = Modifier.weight(1f))
                         IconButton(onClick = { subtasks.removeAt(index) }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Close, contentDescription = "Удалить", modifier = Modifier.size(16.dp))
                         }
@@ -479,7 +480,7 @@ internal fun TaskEditModalSheet(
                     OutlinedTextField(
                         value = newSubtaskText,
                         onValueChange = { newSubtaskText = it },
-                        placeholder = { Text("Добавить шаг (напр. Написать отчет)", fontSize = 12.sp) },
+                        placeholder = { GlitchText("Добавить шаг (напр. Написать отчет)", fontSize = 12.sp) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
@@ -494,7 +495,7 @@ internal fun TaskEditModalSheet(
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Добавить", fontSize = 12.sp)
+                        GlitchText("Добавить", fontSize = 12.sp)
                     }
                 }
             }
@@ -514,7 +515,7 @@ internal fun TaskEditModalSheet(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("Сохранить задачу", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                GlitchText("Сохранить задачу", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
             Spacer(modifier = Modifier.height(20.dp))

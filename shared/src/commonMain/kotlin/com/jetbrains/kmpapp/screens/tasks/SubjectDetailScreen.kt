@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.tasks
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -114,7 +115,7 @@ internal fun SubjectDetailScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
+                    GlitchText(
                         text = subject.shortCode,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
@@ -128,7 +129,7 @@ internal fun SubjectDetailScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Задание", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                        GlitchText("Задание", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     Box {
@@ -137,7 +138,7 @@ internal fun SubjectDetailScreen(
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Редактировать предмет") },
+                                text = { GlitchText("Редактировать предмет") },
                                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                 onClick = {
                                     showMenu = false
@@ -145,7 +146,7 @@ internal fun SubjectDetailScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Удалить предмет", color = MaterialTheme.colorScheme.error) },
+                                text = { GlitchText("Удалить предмет", color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showMenu = false
@@ -191,7 +192,7 @@ internal fun SubjectDetailScreen(
                                     .border(1.dp, subjectColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                                     .padding(horizontal = 10.dp, vertical = 5.dp)
                             ) {
-                                Text(
+                                GlitchText(
                                     text = subject.shortCode,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Black,
@@ -202,13 +203,13 @@ internal fun SubjectDetailScreen(
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
+                                GlitchText(
                                     text = subject.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                Text(
+                                GlitchText(
                                     text = subject.assessmentType.displayName,
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -242,7 +243,7 @@ internal fun SubjectDetailScreen(
                                             .background(importanceColor)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
+                                    GlitchText(
                                         text = subject.importance.displayName,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
@@ -265,7 +266,7 @@ internal fun SubjectDetailScreen(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
+                                    GlitchText(
                                         text = subject.teacherName,
                                         fontSize = 12.5.sp,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -281,7 +282,7 @@ internal fun SubjectDetailScreen(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
+                                    GlitchText(
                                         text = subject.roomOrLink,
                                         fontSize = 12.5.sp,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -291,7 +292,7 @@ internal fun SubjectDetailScreen(
                         }
 
                         if (subject.notes.isNotBlank()) {
-                            Text(
+                            GlitchText(
                                 text = subject.notes,
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -305,13 +306,13 @@ internal fun SubjectDetailScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
+                                GlitchText(
                                     text = "Завершено $completedCount из ${tasks.size}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Text(
+                                GlitchText(
                                     text = "$progressPercent%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
@@ -342,7 +343,7 @@ internal fun SubjectDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
+                    GlitchText(
                         text = "ЗАДАНИЯ И ПРАКТИКИ",
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -368,13 +369,13 @@ internal fun SubjectDetailScreen(
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                             )
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text(
+                            GlitchText(
                                 text = "Заданий пока нет",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
+                            GlitchText(
                                 text = "Добавьте лабораторные, практики или контрольные",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -386,7 +387,7 @@ internal fun SubjectDetailScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Добавить задание")
+                                GlitchText("Добавить задание")
                             }
                         }
                     }
@@ -451,7 +452,7 @@ private fun TaskRowItem(
 
                 // Title + Category
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    GlitchText(
                         text = task.title,
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -462,14 +463,14 @@ private fun TaskRowItem(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
+                        GlitchText(
                             text = task.category.displayName,
                             fontSize = 10.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (task.subtasks.isNotEmpty()) {
                             val doneCount = task.subtasks.count { it.isCompleted }
-                            Text(
+                            GlitchText(
                                 text = "• Чеклист $doneCount/${task.subtasks.size}",
                                 fontSize = 10.5.sp,
                                 color = MaterialTheme.colorScheme.primary
@@ -493,7 +494,7 @@ private fun TaskRowItem(
                         onStatusChange(next)
                     }
                 ) {
-                    Text(
+                    GlitchText(
                         text = task.status.displayName,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -517,7 +518,7 @@ private fun TaskRowItem(
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 8.dp, start = 34.dp)) {
                     if (task.taskDescription.isNotBlank()) {
-                        Text(
+                        GlitchText(
                             text = task.taskDescription,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -540,7 +541,7 @@ private fun TaskRowItem(
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(
+                            GlitchText(
                                 text = subtask.title,
                                 fontSize = 12.sp,
                                 textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
@@ -554,10 +555,10 @@ private fun TaskRowItem(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = onEdit) {
-                            Text("Изменить", fontSize = 11.5.sp)
+                            GlitchText("Изменить", fontSize = 11.5.sp)
                         }
                         TextButton(onClick = onDelete) {
-                            Text("Удалить", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.error)
+                            GlitchText("Удалить", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }

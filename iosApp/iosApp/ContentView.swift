@@ -102,6 +102,10 @@ struct ComposeView: UIViewControllerRepresentable {
             // Resumes Compose rendering and CADisplayLink seamlessly without reloading
             controller.beginAppearanceTransition(true, animated: false)
             controller.endAppearanceTransition()
+            // Пользователь мог выдать/отозвать разрешение на уведомления
+            // в системных настройках, пока приложение было неактивно:
+            // обновляем кэш, который читает тумблер в настройках.
+            NotificationsEngine.refreshAuthorizationCache()
         }
 
         deinit {

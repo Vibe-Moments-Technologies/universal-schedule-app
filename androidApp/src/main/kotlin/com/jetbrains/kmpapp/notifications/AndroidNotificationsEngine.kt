@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.storage.AndroidContextProvider
 
@@ -30,11 +31,9 @@ object AndroidNotificationsEngine : NotificationsManager.NotificationEngine {
 
     override fun isAuthorized(): Boolean {
         val ctx = context ?: return false
-        return androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+        return NotificationManagerCompat.from(ctx).areNotificationsEnabled()
     }
 
-    // subtitle не используется на Android (iOS-only механика) — параметр
-    // присутствует в контракте движка, здесь игнорируется.
     override fun schedule(
         id: String,
         title: String,
@@ -42,6 +41,8 @@ object AndroidNotificationsEngine : NotificationsManager.NotificationEngine {
         body: String,
         dateEpochMillis: Long
     ) {
+        // subtitle — iOS-механика («через N мин» в углу баннера);
+        // Android-компакт-баннер субтитла не имеет: параметр игнорируем.
         val ctx = context ?: return
         val intent = alarmIntent(ctx, id, title, body)
         // Ближний тест из отладки: без разрешения на точные будильники

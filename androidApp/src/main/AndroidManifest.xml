@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Сетевой статус для детектора VPN (ConnectivityManager.getActiveNetwork) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Напоминания о занятиях: показ (API 33+) и точные будильники -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission
@@ -23,16 +24,15 @@
         android:name=".ScheduleApp"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.UniversalSchedule">
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
+        android:theme="@style/Theme.Krasava">
+
+        <!-- Sentry: отключаем автоинициализацию через SentryInitProvider
+             (краш без DSN в манифесте); SDK стартует вручную из
+             AndroidDiagnostics при включённой диагностике. -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false"/>
+
         <!-- Одна иконка, без алиасов и автоадаптации: набор смены иконки
              по теме оказался хрупким (краш на старте, пропажа иконки),
              а выгода не стоила риска. -->
@@ -64,8 +64,8 @@
                 android:resource="@xml/schedule_widget_info"/>
         </receiver>
 
-        <!-- Настройка экземпляра виджета (системный флоу: долгое нажатие
-             на рабочем столе). -->
+        <!-- Выбор расписания для конкретного экземпляра виджета
+             (системный флоу: долгое нажатие на рабочем столе). -->
         <activity
             android:name=".widget.ScheduleWidgetConfigureActivity"
             android:exported="true"

@@ -104,21 +104,23 @@ jobs:
           mkdir -p dist
           if [ "$CHANNEL" = "stable" ]; then
             # неизменное имя — на него ссылаются старые версии приложения
-            cp androidApp/build/outputs/apk/release/*.apk dist/UniversalSchedule.apk
+            cp androidApp/build/outputs/apk/release/*.apk dist/Krasava.apk
           else
-            cp androidApp/build/outputs/apk/release/*.apk "dist/UniversalSchedule-v${VERSION}.apk"
+            cp androidApp/build/outputs/apk/release/*.apk "dist/Krasava-v${VERSION}.apk"
           fi
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UniversalSchedule-APK
+          name: Krasava-APK
           path: dist/*.apk
           if-no-files-found: error
 
   build_ipa:
     name: 🍏 Build iOS Unsigned IPA
-    runs-on: macos-15
+    # macos-26 даёт Xcode 26 и SDK iOS 26+: только там объявлено семейство
+    # виджетов systemExtraLargePortrait (Extra Large для iPhone).
+    runs-on: macos-26
     needs: resolve
     steps:
       - name: 📚 Checkout Repository
@@ -157,12 +159,26 @@ jobs:
 
       - name: 🛠️ Set Xcode Version
         run: |
-          if [ -d "/Applications/Xcode_16.4.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
-          elif [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          # Требуется Xcode 26: семейство виджетов systemExtraLargePortrait
+          # (Extra Large для iPhone) объявлено только в SDK iOS 26+.
+          # Фолбэков нет намеренно — на старом SDK код виджета не компилируется,
+          # поэтому честнее упасть здесь с понятным сообщением, чем выпустить
+          # сборку без четвёртого виджета.
+          FOUND=""
+          for V in 26.6 26.5 26.4 26.3; do
+            if [ -d "/Applications/Xcode_${V}.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_${V}.app/Contents/Developer"
+              FOUND="$V"
+              break
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error::Xcode 26 не найден на раннере. Доступно:"
+            ls -d /Applications/Xcode*.app || true
+            exit 1
           fi
           xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: 🔨 Build iOS App (no codesign)
         run: |
@@ -173,9 +189,36 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            DEBUG_INFORMATION_FORMAT=dwarf \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build
+
+      - name: 🕯️ Upload dSYM to Sentry
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          cd iosApp
+          sentry-cli debug-files upload --org l1ratch-dev --project krasava-app \
+            build/Build/Products/Release-iphoneos \
+            ../shared/build/xcode-frameworks
+
+      - name: 🔏 Ad-hoc подпись с entitlements (App Group для виджета)
+        # Схема из docs/widgets-with-custom-certificates: ad-hoc (identity "-")
+        # не требует сертификата, но вшивает entitlements в бинарник. Инструмент
+        # переподписи (GBox/Feather/ESign) увидит заявленную App Group и
+        # сохранит её на .appex — иначе виджет после переподписи остаётся
+        # без общего контейнера. Вложенные бандлы подписываются ПЕРВЫМИ.
+        run: |
+          cd iosApp
+          APP_PATH=$(find build -name "*.app" -type d | head -n 1)
+          codesign --force --sign - --entitlements KrasavaWidget/KrasavaWidget.entitlements "$APP_PATH/PlugIns/KrasavaWidget.appex"
+          codesign --force --sign - --entitlements iosApp/iosApp.entitlements "$APP_PATH"
+          echo "--- entitlements .appex ---"
+          codesign -d --entitlements :- "$APP_PATH/PlugIns/KrasavaWidget.appex"
+          echo "--- entitlements .app ---"
+          codesign -d --entitlements :- "$APP_PATH"
 
       - name: 📦 Package Unsigned IPA
         env:
@@ -188,9 +231,9 @@ jobs:
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
           if [ "$CHANNEL" = "stable" ]; then
-            IPA_NAME="UniversalSchedule.ipa"
+            IPA_NAME="Krasava.ipa"
           else
-            IPA_NAME="UniversalSchedule-v${VERSION}.ipa"
+            IPA_NAME="Krasava-v${VERSION}.ipa"
           fi
           zip -r "../$IPA_NAME" Payload
           rm -rf Payload
@@ -200,7 +243,7 @@ jobs:
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UniversalSchedule-IPA
+          name: Krasava-IPA
           path: ${{ env.IPA_NAME }}
           if-no-files-found: error
 
@@ -223,14 +266,14 @@ jobs:
       - name: 📥 Download APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: UniversalSchedule-APK
+          name: Krasava-APK
           path: download_apk
         continue-on-error: true
 
       - name: 📥 Download IPA Artifact
         uses: actions/download-artifact@v4
         with:
-          name: UniversalSchedule-IPA
+          name: Krasava-IPA
           path: download_ipa
         continue-on-error: true
 
@@ -275,6 +318,9 @@ jobs:
           BUILD: ${{ needs.resolve.outputs.build_id }}
           SHA: ${{ needs.resolve.outputs.commit_sha }}
         run: python tools/update_version_feed.py --channel "$CHANNEL" --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" --out-dir dist_version
+
+      - name: 📋 Copy remote config
+        run: cp config.json dist_version/
 
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

@@ -11,6 +11,7 @@ package com.jetbrains.kmpapp.data.appicon
 object AppIconManager {
     /** Значения совпадают с именами appiconset'ов в Assets.xcassets (asset catalog). */
     const val ICON_DEFAULT = "default"
+    const val ICON_ALT = "AppIconAlt"
 
     interface IconEngine {
         fun applyIcon(name: String)

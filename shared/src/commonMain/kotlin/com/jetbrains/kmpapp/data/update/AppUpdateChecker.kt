@@ -33,24 +33,35 @@ data class VersionFeed(
 data class GitHubRelease(
     @SerialName("tag_name")
     val tagName: String = "",
-    val body: String? = null,
-    @SerialName("html_url")
-    val htmlUrl: String = ""
+    val body: String? = null
 )
 
+/**
+ * Результат проверки: только факт «есть версия новее» + метаданные для
+ * информационного бейджа. Никаких ссылок и установщиков: приложение
+ * распространяется через маркеты (они обновляют сами), sideload-пользователи
+ * обновляются вручную со страницы релизов.
+ */
 data class UpdateCheckResult(
     val urgency: UpdateUrgency,
     val latestVersion: String,
-    val changelog: String? = null,
-    val releaseUrl: String
+    val latestBuild: Int,
+    val currentVersion: String = AppVersion.VERSION_NAME,
+    val currentBuild: Int = AppVersion.BUILD_NUMBER,
+    val isCritical: Boolean = false,
+    val changelog: String? = null
 ) {
     val hasUpdate: Boolean get() = urgency != UpdateUrgency.UP_TO_DATE
 }
 
 /**
- * Проверка обновлений: только stable-канал, только «есть ли версия новее».
- * Скачивание и запуск установщика отключены — «Обновить» ведёт в браузер
- * на страницу релизов GitHub. Бета-система скрыта (код канала сохранён).
+ * Проверка стабильного канала: version.json на gh-pages, при его
+ * недоступности — latest release через GitHub API. Проверяется для всех
+ * источников установки: маркеты обновляют сами, но знать о новой версии
+ * полезно (например, если автообновление маркета выключено).
+ *
+ * Бета-канал из приложения убран: в RuStore/Google Play/App Store бета
+ * ведётся средствами самого стора.
  */
 class AppUpdateChecker(
     private val client: HttpClient
@@ -65,23 +76,45 @@ class AppUpdateChecker(
     }
 
     suspend fun checkForUpdates(): UpdateCheckResult? = withContext(Dispatchers.IO) {
-        fetchFeedResult(AppVersion.UPDATE_FEED_URL) ?: fetchLatestReleaseResult()
+        // Тестовый фид (меню отладки): файл version-test.json на gh-pages —
+        // версии крутятся как угодно для проверки поведения приложения.
+        // Тумблер доступен только на dev/beta/contrib; DebugConfig сам
+        // принудительно гасит флаг на стабильном релизе.
+        val testFeed = com.jetbrains.kmpapp.data.DebugConfig.isTestVersionFeed.value
+        if (testFeed) {
+            fetchFeedResult(AppVersion.TEST_UPDATE_FEED_URL)
+        } else {
+            fetchFeedResult() ?: fetchLatestReleaseResult()
+        }
     }
 
-    private suspend fun fetchFeedResult(url: String): UpdateCheckResult? {
+    private suspend fun fetchFeedResult(
+        feedUrl: String = AppVersion.UPDATE_FEED_URL
+    ): UpdateCheckResult? {
         return try {
-            val response = client.get(url) {
-                header("User-Agent", "universal-schedule-app")
+            val response = client.get(feedUrl) {
+                header("User-Agent", "Krasava-App")
+                // raw.githubusercontent отдаёт max-age=300: NSURLSession (iOS)
+                // и OkHttp-кеш могли отдавать СТАРЫЙ JSON из локального кеша
+                // до 5 минут после правки фида — «тестовый фид не работает»
+                // (репорт владельца). no-cache заставляет кеш свериться
+                // с сервером: файл правки виден сразу.
+                header("Cache-Control", "no-cache")
             }
             if (response.status.value !in 200..299) return null
             val feed = json.decodeFromString<VersionFeed>(response.body<String>())
             if (feed.version.isBlank()) return null
+            // Диагностика (в т.ч. тестового фида): что реально прочитано.
+            println("UpdateFeed $feedUrl -> ${feed.version} build=${feed.build}")
 
             val hasNewerVersion = VersionComparator.compare(feed.version, AppVersion.VERSION_NAME) > 0
             val hasNewerBuild = feed.build > AppVersion.BUILD_NUMBER
-            val isCritical = AppVersion.BUILD_NUMBER < feed.minSupportedBuild ||
-                (feed.critical && (hasNewerVersion || hasNewerBuild))
+            val isUnderMinSupported = AppVersion.BUILD_NUMBER < feed.minSupportedBuild
+            val isCritical = isUnderMinSupported || (feed.critical && (hasNewerVersion || hasNewerBuild))
 
+            // NEW_VERSION требует и новую версию, и новую сборку: легаси-релизы (26.9.x)
+            // численно больше всей линии 26.0.0, но их build (79) меньше любого epoch —
+            // без этой проверки dev-сборкам предлагался бы даунгрейд до 26.9.1
             val urgency = when {
                 isCritical -> UpdateUrgency.CRITICAL
                 hasNewerVersion && hasNewerBuild -> UpdateUrgency.NEW_VERSION
@@ -92,11 +125,12 @@ class AppUpdateChecker(
             UpdateCheckResult(
                 urgency = urgency,
                 latestVersion = feed.version,
-                changelog = feed.changelog,
-                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest"
+                latestBuild = feed.build,
+                isCritical = isCritical,
+                changelog = feed.changelog
             )
         } catch (e: Throwable) {
-            println("Feed check error ($url): ${e.message}")
+            println("Feed check error: ${e.message}")
             null
         }
     }
@@ -104,10 +138,10 @@ class AppUpdateChecker(
     private suspend fun fetchLatestReleaseResult(): UpdateCheckResult? {
         return try {
             val response = client.get("https://api.github.com/repos/$GITHUB_REPO/releases/latest") {
-                header("User-Agent", "universal-schedule-app")
+                header("User-Agent", "Krasava-App")
             }
             if (response.status.value !in 200..299) return null
-            val release = json.decodeFromString<GitHubRelease>(response.body<String>())
+            val release = response.body<GitHubRelease>()
             if (release.tagName.isBlank()) return null
 
             val latestTag = release.tagName.trimStart('v', 'V')
@@ -116,8 +150,9 @@ class AppUpdateChecker(
             UpdateCheckResult(
                 urgency = if (isNewerVersion) UpdateUrgency.NEW_VERSION else UpdateUrgency.UP_TO_DATE,
                 latestVersion = latestTag,
-                changelog = release.body,
-                releaseUrl = release.htmlUrl.ifBlank { "https://github.com/$GITHUB_REPO/releases/latest" }
+                latestBuild = AppVersion.BUILD_NUMBER,
+                isCritical = false,
+                changelog = release.body
             )
         } catch (t: Throwable) {
             println("GitHub API update check error: ${t.message}")

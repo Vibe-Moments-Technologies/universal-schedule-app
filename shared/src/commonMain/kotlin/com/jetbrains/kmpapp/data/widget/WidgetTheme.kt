@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.toArgb
 import com.jetbrains.kmpapp.DarkColors
 import com.jetbrains.kmpapp.LightColors
 import com.jetbrains.kmpapp.data.model.ThemeMode
-import com.jetbrains.kmpapp.theme.CyberpunkVariant
 import com.jetbrains.kmpapp.theme.HalloweenDarkColors
 import com.jetbrains.kmpapp.theme.KawaiiDarkColors
 import com.jetbrains.kmpapp.theme.KawaiiLightColors
@@ -14,6 +13,7 @@ import com.jetbrains.kmpapp.theme.MatrixLightColors
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
 import com.jetbrains.kmpapp.theme.SakuraLightColors
 import com.jetbrains.kmpapp.theme.ThemeOverlay
+import com.jetbrains.kmpapp.theme.CyberpunkVariant
 import com.jetbrains.kmpapp.theme.cyberpunkColors
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

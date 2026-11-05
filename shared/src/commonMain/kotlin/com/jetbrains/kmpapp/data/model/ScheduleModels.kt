@@ -4,11 +4,45 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
 @Serializable
+enum class ScheduleTargetType(val id: Int, val pathName: String, val displayName: String) {
+    GROUP(1, "Group", "Группа"),
+    TEACHER(2, "Teacher", "Преподаватель"),
+    AUDITORIUM(3, "Auditorium", "Аудитория");
+
+    companion object {
+        fun fromId(id: Int): ScheduleTargetType =
+            entries.firstOrNull { it.id == id } ?: GROUP
+    }
+}
+
+@Serializable
+data class ScheduleTarget(
+    val id: Int,
+    val targetTitle: String,
+    val fullTitle: String,
+    val scheduleTarget: Int = 1
+) {
+    val type: ScheduleTargetType
+        get() = ScheduleTargetType.fromId(scheduleTarget)
+}
+
+@Serializable
 enum class LessonType(val displayName: String, val shortName: String) {
     LECTURE("Лекция", "ЛК"),
     PRACTICE("Практика", "ПР"),
     LAB("Лабораторная", "ЛАБ"),
-    OTHER("Занятие", "ДР")
+    EXAM("Экзамен", "ЭКЗ"),
+    CREDIT("Зачёт", "ЗАЧ"),
+    COURSE_WORK("Курсовая", "КР"),
+    CONSULTATION("Консультация", "КОНС"),
+    INDIVIDUAL_WORK("Самост. работа", "СР"),
+    OTHER("Занятие", "ДР"),
+    ADDITIONAL("Доп. занятие", "ДОП"),
+    /**
+     * «Мероприятие» (код МР в фиде, FULL_LESSON_TYPE: «Мероприятие»):
+     * внеучебные события в расписании. Найден в живом фиде (ауд. 249, С-20).
+     */
+    EVENT("Мероприятие", "МР")
 }
 
 @Serializable
@@ -40,7 +74,21 @@ data class Lesson(
     val endTime: String,
     val date: LocalDate,
     val groups: List<String> = emptyList()
-)
+) {
+    /**
+     * Дистанционная пара: аудитория в фиде приходит строкой «СДО» (сайт вуза
+     * online-edu.mirea.ru), а не номером аудитории. Корпусом она не является
+     * и по клику на карту не ведёт.
+     *
+     * Сравнение без регистра: фид писали и «СДО», и «сдо».
+     */
+    val isRemote: Boolean
+        get() = classrooms.any { it.trim().equals("СДО", ignoreCase = true) }
+
+    /** Аудитории, не являющиеся дистанционными маркерами. */
+    val physicalClassrooms: List<String>
+        get() = classrooms.filterNot { it.trim().equals("СДО", ignoreCase = true) }
+}
 
 data class DaySchedule(
     val date: LocalDate,

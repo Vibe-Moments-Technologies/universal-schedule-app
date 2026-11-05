@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.schedule
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +21,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
@@ -29,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +49,10 @@ import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
+import com.jetbrains.kmpapp.data.model.ScheduleTargetType
+import com.jetbrains.kmpapp.data.model.defaultLessonColor
 import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
+import com.jetbrains.kmpapp.theme.LocalLessonTypeOverrides
 import org.koin.compose.koinInject
 
 @Composable
@@ -57,6 +65,8 @@ fun ScheduleSlotCard(
     showEmptyLessonProgress: Boolean = true,
     showBreakProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
+    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
+    noteTargetId: Int = -1,
     modifier: Modifier = Modifier
 ) {
     when (slot) {
@@ -69,6 +79,8 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
+                    scheduleTargetType = scheduleTargetType,
+                    noteTargetId = noteTargetId,
                     modifier = modifier
                 )
             } else {
@@ -82,6 +94,8 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
+                    scheduleTargetType = scheduleTargetType,
+                    noteTargetId = noteTargetId,
                     modifier = modifier
                 )
             }
@@ -108,18 +122,25 @@ fun LessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
+    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
+    noteTargetId: Int = -1,
     modifier: Modifier = Modifier,
     pageIndicator: Pair<Int, Int>? = null,
     horizontalMargin: androidx.compose.ui.unit.Dp = 16.dp
 ) {
     val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
-    // Заметка к паре (R2): читаем из хранилища, показываем превью
+    // Заметка к паре (R2): реактивное чтение — превью появляется сразу после
+    // сохранения (StateFlow), а ключ точный по targetId+дата+пара: заметки
+    // чужих расписаний в карточку не попадают.
     val notesStorage: LessonNotesStorage = koinInject()
-    val notePreview = notesStorage.getLessonNoteByDate(
-        date = lesson.date.toString(),
-        bellNumber = lesson.bellNumber
-    )?.text
+    val allNotes by notesStorage.notes.collectAsState()
+    val notePreview = if (noteTargetId >= 0) {
+        val noteKey = notesStorage.lessonKey(noteTargetId, lesson.date.toString(), lesson.bellNumber)
+        allNotes.firstOrNull { it.noteKey == noteKey }?.text
+    } else {
+        null
+    }
 
     // ponytail: State протягивается вниз и читается ТОЛЬКО на сегодняшних
     // карточках: тик раз в 30 секунд пересобирает одну активную карточку,
@@ -164,7 +185,7 @@ fun LessonCard(
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
-                            Text(
+                            GlitchText(
                                 text = "${lesson.bellNumber} пара",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -174,7 +195,7 @@ fun LessonCard(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Text(
+                        GlitchText(
                             text = "${lesson.startTime} — ${lesson.endTime}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
@@ -192,7 +213,7 @@ fun LessonCard(
                                 .background(typeBg)
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text(
+                            GlitchText(
                                 text = lesson.lessonType.displayName,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -205,7 +226,7 @@ fun LessonCard(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Subject name
-                Text(
+                GlitchText(
                     text = if (showAbbreviatedNames) abbreviateSubjectName(lesson.subject) else lesson.subject,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -214,8 +235,31 @@ fun LessonCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Детали: преподаватель и аудитория (подгруппа — в карточке пары).
-                if (lesson.teachers.isNotEmpty()) {
+                // Details: show the useful entity for the selected schedule target.
+                val groupsText = lesson.groups.joinToString(", ")
+                val showGroupsAsTeacherReplacement = scheduleTargetType == ScheduleTargetType.TEACHER && lesson.groups.isNotEmpty()
+
+                if (showGroupsAsTeacherReplacement) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = "Группы",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        GlitchText(
+                            text = groupsText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                } else if (lesson.teachers.isNotEmpty()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 2.dp)
@@ -227,7 +271,7 @@ fun LessonCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
+                        GlitchText(
                             text = lesson.teachers.joinToString(", "),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -237,27 +281,83 @@ fun LessonCard(
                     }
                 }
 
-                if (lesson.classrooms.isNotEmpty()) {
+                if (lesson.classrooms.isNotEmpty() || lesson.groups.size > 1) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Аудитория",
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = lesson.classrooms.joinToString(", "),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
+                        if (scheduleTargetType == ScheduleTargetType.AUDITORIUM && lesson.groups.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Group,
+                                contentDescription = "Группы",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            GlitchText(
+                                text = groupsText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else if (lesson.isRemote) {
+                            // «СДО» из фида — это сайт вуза
+                            // (online-edu.mirea.ru), не корпус и не аудитория:
+                            // рисуем подпись дистанционной пары, а не строку
+                            // с иконкой локации.
+                            Icon(
+                                imageVector = Icons.Default.Language,
+                                contentDescription = "Дистанционно",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            GlitchText(
+                                text = "Дистанционно · СДО",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                        } else if (lesson.physicalClassrooms.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Аудитория",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            GlitchText(
+                                text = lesson.physicalClassrooms.joinToString(", "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+
+                        if (scheduleTargetType == ScheduleTargetType.GROUP && lesson.groups.size > 1) {
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Group,
+                                contentDescription = "Группы",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            GlitchText(
+                                text = groupsText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
 
@@ -279,7 +379,7 @@ fun LessonCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
+                        GlitchText(
                             text = notePreview,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -296,7 +396,7 @@ fun LessonCard(
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         modifier = Modifier.padding(top = 10.dp)
                     ) {
-                        Text(
+                        GlitchText(
                             text = "$total ${if (total in 2..4) "пары" else "пар"} в это время",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
@@ -352,6 +452,8 @@ fun MultiLessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
+    scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
+    noteTargetId: Int = -1,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { lessons.size })
@@ -371,6 +473,8 @@ fun MultiLessonCard(
             currentMinutesState = currentMinutesState,
             showLessonProgress = showLessonProgress,
             showAbbreviatedNames = showAbbreviatedNames,
+            scheduleTargetType = scheduleTargetType,
+            noteTargetId = noteTargetId,
             pageIndicator = lessons.size to pagerState.currentPage,
             horizontalMargin = 0.dp
         )
@@ -416,13 +520,13 @@ fun EmptyLessonCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                GlitchText(
                     text = "$bellNumber пара • $startTime — $endTime",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                 )
-                Text(
+                GlitchText(
                     text = "Нет пары",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -481,7 +585,7 @@ fun LessonBreakIndicator(
         // самой надписи, а не от ширины строки (иначе первая половина перемены
         // красила бы пустое поле слева и подсветка «не появлялась»).
         Box {
-            Text(
+            GlitchText(
                 text = breakText,
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.Medium,
@@ -495,7 +599,7 @@ fun LessonBreakIndicator(
                 )
                 // Копия надписи цветом primary, обрезанная клипом по пройденной
                 // части: тот же текст/стиль, поэтому буквы совпадают пиксель в пиксель.
-                Text(
+                GlitchText(
                     text = breakText,
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.Medium,
@@ -527,15 +631,54 @@ private val TYPE_BADGE_COLORS = mapOf(
         Color(0xFF7C2D12) to Color(0xFFFED7AA),
         Color(0xFFFED7AA) to Color(0xFFC2410C)
     ),
+    LessonType.EXAM to listOf(
+        Color(0xFF7F1D1D) to Color(0xFFFECACA),
+        Color(0xFFFECACA) to Color(0xFFB91C1C)
+    ),
+    LessonType.CREDIT to listOf(
+        Color(0xFF134E4A) to Color(0xFF99F6E4),
+        Color(0xFF99F6E4) to Color(0xFF0F766E)
+    ),
+    LessonType.COURSE_WORK to listOf(
+        Color(0xFF713F12) to Color(0xFFFDE68A),
+        Color(0xFFFDE68A) to Color(0xFFA16207)
+    ),
+    LessonType.CONSULTATION to listOf(
+        Color(0xFF312E81) to Color(0xFFC7D2FE),
+        Color(0xFFC7D2FE) to Color(0xFF4338CA)
+    ),
+    LessonType.INDIVIDUAL_WORK to listOf(
+        Color(0xFF334155) to Color(0xFFCBD5E1),
+        Color(0xFFCBD5E1) to Color(0xFF475569)
+    ),
     LessonType.OTHER to listOf(
         Color(0xFF581C87) to Color(0xFFE9D5FF),
         Color(0xFFE9D5FF) to Color(0xFF7E22CE)
+    ),
+    LessonType.ADDITIONAL to listOf(
+        Color(0xFF831843) to Color(0xFFFBCFE8),
+        Color(0xFFFCE7F3) to Color(0xFFBE185D)
     )
 )
 
 @Composable
 internal fun getTypeBadgeColors(lessonType: LessonType): Pair<Color, Color> {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val colors = TYPE_BADGE_COLORS.getValue(lessonType)
+    // Пользовательский цвет: если он отличается от стандартного для этого типа,
+    // рисуем бейдж как полупрозрачную плашку с акцентом. Если выбран «родной»
+    // цвет типа — оставляем привычный контрастный бейдж из TYPE_BADGE_COLORS.
+    val override = LocalLessonTypeOverrides.current[lessonType]
+    if (override != null && override != defaultLessonColor[lessonType]) {
+        val accent = override.color(isDark)
+        val background = accent.copy(alpha = if (isDark) 0.22f else 0.16f)
+        return background to accent
+    }
+    // Фолбэк вместо getValue: новый тип занятия без своей пары цветов не должен
+    // ронять экран расписания — берём нейтральный серый.
+    val colors = TYPE_BADGE_COLORS[lessonType]
+    if (colors == null) {
+        return if (isDark) Color(0xFF334155) to Color(0xFFCBD5E1)
+        else Color(0xFFCBD5E1) to Color(0xFF475569)
+    }
     return if (isDark) colors[0] else colors[1]
 }

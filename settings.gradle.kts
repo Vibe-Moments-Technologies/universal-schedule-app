@@ -1,4 +1,4 @@
-rootProject.name = "universal-schedule"
+rootProject.name = "KMP-App-Template"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

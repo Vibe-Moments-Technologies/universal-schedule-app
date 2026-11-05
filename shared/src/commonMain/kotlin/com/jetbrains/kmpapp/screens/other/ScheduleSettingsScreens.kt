@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,7 @@ fun ScheduleDisplaySettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
+    val hideAdditionalLessons by viewModel.hideAdditionalLessons.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
 
@@ -64,6 +66,12 @@ fun ScheduleDisplaySettingsScreen(
             subtitle = "Отображать окна между занятиями в списке пар",
             checked = showEmptyLessons,
             onCheckedChange = { viewModel.setShowEmptyLessons(it) }
+        )
+        SettingsToggleRow(
+            title = "Скрывать доп. занятия",
+            subtitle = "Не показывать пары типа «ДОП» в расписании, календаре и напоминаниях",
+            checked = hideAdditionalLessons,
+            onCheckedChange = { viewModel.setHideAdditionalLessons(it) }
         )
         SettingsToggleRow(
             title = "Сокращённые названия",
@@ -119,6 +127,56 @@ fun ScheduleProgressSettingsScreen(
     }
 }
 
+// ── Расписание: календарь ────────────────────────────────────
+
+@Composable
+fun ScheduleCalendarSettingsScreen(
+    viewModel: OtherViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PlatformBackHandler(onBack = onBack)
+    val calendarSwipeCollapse by viewModel.calendarSwipeCollapse.collectAsState()
+
+    SettingsSubScreen(
+        title = "Календарь",
+        onBack = onBack,
+        modifier = modifier
+    ) {
+        SettingsToggleRow(
+            title = "Сворачивание календаря свайпом",
+            subtitle = "Свайп вверх по ленте календаря скрывает её над расписанием",
+            checked = calendarSwipeCollapse,
+            onCheckedChange = { viewModel.setCalendarSwipeCollapse(it) }
+        )
+    }
+}
+
+// ── Параметры сервисов: Конспекты ────────────────────────────
+
+@Composable
+fun ServiceNotesSettingsScreen(
+    viewModel: OtherViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PlatformBackHandler(onBack = onBack)
+    val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
+
+    SettingsSubScreen(
+        title = "Конспекты",
+        onBack = onBack,
+        modifier = modifier
+    ) {
+        SettingsToggleRow(
+            title = "Спрашивать при удалении",
+            subtitle = "Подтверждение перед удалением страниц и полей в конспектах",
+            checked = askBeforeNoteDelete,
+            onCheckedChange = { viewModel.setAskBeforeNoteDelete(it) }
+        )
+    }
+}
+
 // ── Общие композаблы ─────────────────────────────────────────
 
 @Composable
@@ -146,7 +204,7 @@ private fun SettingsSubScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -189,13 +247,13 @@ private fun ColumnScope_SettingsToggleRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
+            GlitchText(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            GlitchText(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

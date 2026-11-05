@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -74,7 +75,7 @@ fun ExperimentalSettingsScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = "Экспериментальные параметры",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -86,6 +87,7 @@ fun ExperimentalSettingsScreen(
     ) { innerPadding ->
         ExperimentalSettingsContent(
             modifier = Modifier.padding(innerPadding),
+            scrollState = viewModel.scrollState("experimental"),
             showMatrix = cheatsAgreed == true && !cheatsBlocked,
             isMatrixTheme = themeOverlay == ThemeOverlay.MATRIX,
             onCheatsClick = { turnOn ->
@@ -122,8 +124,8 @@ fun ExperimentalSettingsScreen(
         onDismiss = { showDisappointment = false },
         onConfirm = {
             viewModel.setCheatsBlocked(true)
-            // Матрица теряется навсегда: тема выключается и исчезает из
-            // списка «Тематические темы» (нарушение договора о читах).
+            // Матрица потеряна: тема выключается и исчезает из списка
+            // «Тематические темы» навсегда — второго шанса нет.
             viewModel.revokeMatrixUnlock()
             showDisappointment = false
         }
@@ -144,12 +146,13 @@ private fun ExperimentalSettingsContent(
     isMatrixTheme: Boolean,
     onCheatsClick: (Boolean) -> Unit,
     onMatrixChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -183,9 +186,9 @@ private fun CheatsRow(onCheckedChange: (Boolean) -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Читы", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            GlitchText("Читы", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            GlitchText(
                 "активирует читы",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -204,9 +207,9 @@ private fun MatrixThemeRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit)
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Хочешь в матрицу?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            GlitchText("Хочешь в матрицу?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            GlitchText(
                 "Перенесем в матрицу",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -227,16 +230,16 @@ private fun DisclaimerDialog(
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Дисклеймер", fontWeight = FontWeight.Bold) },
+        title = { GlitchText("Дисклеймер", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text("так, кто у нас тут пытается включить читы? 😏", fontWeight = FontWeight.SemiBold)
+                GlitchText("так, кто у нас тут пытается включить читы? 😏", fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("разработчики категорически против использования таких функций. Обещаешь ли ты больше никогда не использовать эту функцию?")
+                GlitchText("разработчики категорически против использования таких функций. Обещаешь ли ты больше никогда не использовать эту функцию?")
             }
         },
-        confirmButton = { Button(onClick = onAgree) { Text("да, обещаю") } },
-        dismissButton = { TextButton(onClick = onRefuse) { Text("нет, включить читы") } }
+        confirmButton = { Button(onClick = onAgree) { GlitchText("да, обещаю") } },
+        dismissButton = { TextButton(onClick = onRefuse) { GlitchText("нет, включить читы") } }
     )
 }
 
@@ -245,9 +248,9 @@ private fun RewardDialog(visible: Boolean, onDismiss: () -> Unit) {
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Награда 🎁", fontWeight = FontWeight.Bold) },
-        text = { Text("Хм... Хорошо, мы следим за тобой, держи авансом награду.") },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Готово") } }
+        title = { GlitchText("Награда 🎁", fontWeight = FontWeight.Bold) },
+        text = { GlitchText("Хм... Хорошо, мы следим за тобой, держи авансом награду.") },
+        confirmButton = { TextButton(onClick = onDismiss) { GlitchText("Готово") } }
     )
 }
 
@@ -256,8 +259,8 @@ private fun RefusalDialog(visible: Boolean, onDismiss: () -> Unit) {
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        text = { Text("Очень жаль... Мы врятли сможем договориться.") },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Готово") } }
+        text = { GlitchText("Очень жаль... Мы врятли сможем договориться.") },
+        confirmButton = { TextButton(onClick = onDismiss) { GlitchText("Готово") } }
     )
 }
 
@@ -270,15 +273,15 @@ private fun DisappointmentDialog(
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Мы разочарованы в тебе", fontWeight = FontWeight.Bold) },
+        title = { GlitchText("Мы разочарованы в тебе", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text("Мы думали, что у нас договор...")
+                GlitchText("Мы думали, что у нас договор...")
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Печально, больше не обращайся к нам по этому вопросу 😢")
+                GlitchText("Печально, больше не обращайся к нам по этому вопросу 😢")
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Готово") } }
+        confirmButton = { TextButton(onClick = onConfirm) { GlitchText("Готово") } }
     )
 }
 
@@ -291,8 +294,8 @@ private fun NoSecondChanceDialog(
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ты сделал свой выбор", fontWeight = FontWeight.Bold) },
-        text = { Text("к сожалению, мы не можем дать тебе второй шанс 😔") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Готово") } }
+        title = { GlitchText("Ты сделал свой выбор", fontWeight = FontWeight.Bold) },
+        text = { GlitchText("к сожалению, мы не можем дать тебе второй шанс 😔") },
+        confirmButton = { TextButton(onClick = onConfirm) { GlitchText("Готово") } }
     )
 }

@@ -1,16 +1,20 @@
 package com.jetbrains.kmpapp.screens.schedule
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,11 +35,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +59,7 @@ import androidx.compose.foundation.shape.CircleShape
 
 private const val BASE_PAGE = 1000
 
-/** Порог вертикального свайпа-ступени, px (жест раскрытия). */
+/** Порог вертикального свайпа-ступени, dp→px (issue #3: жест раскрытия). */
 private const val EXPAND_SWIPE_THRESHOLD_PX = 44f
 
 @Composable
@@ -62,6 +68,8 @@ fun WeekCalendarStrip(
     onDateSelected: (LocalDate) -> Unit,
     lessonSummaries: Map<LocalDate, DayLessonSummary> = emptyMap(),
     onTitleClick: () -> Unit = {},
+    onCollapse: () -> Unit = {},
+    swipeCollapseEnabled: Boolean = false,
     expandState: CalendarExpandState = CalendarExpandState.WEEK,
     onExpandStateChange: (CalendarExpandState) -> Unit = {},
     modifier: Modifier = Modifier
@@ -95,9 +103,10 @@ fun WeekCalendarStrip(
     val todayInCurrentWeek = today >= currentWeekMonday && today < currentWeekEnd
     val weekInfo = DateUtils.getWeekInfo(currentWeekMonday)
     // Месяц в заголовке — от ВЫБРАННОГО дня, не от понедельника недели
-    // (пограничная неделя 27 окт–1 ноя показывала «Октябрь», хотя выбран
-    // Вс=1 ноября). Выбран день другой недели (листнули, но не тапнули) —
-    // берём середину видимой недели, чтобы заголовок следовал за листанием.
+    // (репорт владельца: пограничная неделя 27 окт–1 ноя показывала
+    // «Октябрь», хотя пользователь на Вс=1 ноября). Выбран день другой
+    // недели (листнули, но не тапнули) — берём середину видимой недели,
+    // чтобы заголовок следовал за листанием.
     val headerDate = if (selectedDate >= currentWeekMonday && selectedDate < currentWeekEnd) {
         selectedDate
     } else {
@@ -109,22 +118,33 @@ fun WeekCalendarStrip(
     // Состояние и колбэки жеста обязаны читаться через rememberUpdatedState:
     // pointerInput запускается ОДИН раз, а состояние меняется (неделя → две
     // недели). Без этого жест навсегда запоминает значения первой композиции —
-    // после раскрытия пересчитывает те же ступени и «перестаёт реагировать».
+    // после раскрытия пересчитывает те же ступени и «перестаёт реагировать»
+    // (баг с устройства владельца: оживает только после пересоздания экрана).
+    // Лямбды ниже читают эти делегаты, поэтому pointerInput всегда видит
+    // актуальные значения, хотя сам блок перезапускаться не должен.
+    val currentOnCollapse by rememberUpdatedState(onCollapse)
+    val currentSwipeCollapseEnabled by rememberUpdatedState(swipeCollapseEnabled)
     val currentExpandState by rememberUpdatedState(expandState)
     val currentOnExpandStateChange by rememberUpdatedState(onExpandStateChange)
-    val currentOnTitleClick by rememberUpdatedState(onTitleClick)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            // Жест раскрытия/сворачивания живёт на всей области календарика.
-            // Условия бесконтекстности:
+            // Жест раскрытия/сворачивания живёт на всей области календарика
+            // (issue #3, решение владельца). Полоса-делитель 14dp удалена:
+            // она занимала место ради одного жеста, теперь он распределён
+            // по всей ленте.
+            //
+            // Условия бесконтекстности (требование владельца: «всё остальное
+            // нужно пропускать»):
             // — тапы не затрагиваются: жест реагирует только на смещение
-            //   больше порога, короткое нажатие до порога — не наш случай;
+            //   больше порога, короткое нажатие до порога — не наш случай,
+            //   событие уходит кликабельным детям;
             // — горизонтальный пейджер не затрагивается: порог направления
             //   требует вертикального доминирования (|dy| > 1.5|dx|), иначе
             //   жест отменяется и события не потребляются вовсе;
-            // — событие потребляется только когда жест признан нашим.
+            // — событие потребляется только когда жест признан нашим, после
+            //   чего клики/пейджер его уже не увидят.
             .calendarExpandGesture(
                 onSwipeDown = {
                     val next = currentExpandState.onSwipeDown()
@@ -134,10 +154,11 @@ fun WeekCalendarStrip(
                     val next = currentExpandState.onSwipeUp()
                     if (next != currentExpandState) {
                         currentOnExpandStateChange(next)
-                        // MONTH-ступень — это месячный оверлей: свайп вниз
-                        // до месяца открывает его (тот же onTitleClick,
-                        // что и тап по заголовку месяца).
-                        if (next == CalendarExpandState.MONTH) currentOnTitleClick()
+                    } else if (currentExpandState == CalendarExpandState.WEEK && currentSwipeCollapseEnabled) {
+                        // Дальше сворачивать некуда: в WEEK свайп вверх
+                        // сворачивает ленту целиком — как раньше делала
+                        // 14dp-полоса, только с большей области захвата.
+                        currentOnCollapse()
                     }
                 }
             )
@@ -168,7 +189,7 @@ fun WeekCalendarStrip(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
+                GlitchText(
                     text = "$monthTitle $year • ${weekInfo.weekNumber} неделя",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -191,7 +212,7 @@ fun WeekCalendarStrip(
                             onDateSelected(today)
                         }
                     ) {
-                        Text(
+                        GlitchText(
                             text = "Сегодня",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -230,8 +251,9 @@ fun WeekCalendarStrip(
             val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
             val weekDates = (0..6).map { pageMonday.plus(DatePeriod(days = it)) }
 
-            // Раскрытие в две недели: чётная и нечётная недели рядом.
-            // Вторая строка — соседняя неделя, чтобы пара всегда была видна.
+            // Раскрытие в две недели (issue #3): автору важно видеть чётную и
+            // нечётную недели рядом. Вторая строка — соседняя неделя, чтобы
+            // чётная/нечётная всегда были в паре.
             val secondRowDates = if (expandState == CalendarExpandState.TWO_WEEKS) {
                 val secondMonday = pageMonday.plus(DatePeriod(days = 7))
                 (0..6).map { secondMonday.plus(DatePeriod(days = it)) }
@@ -264,6 +286,7 @@ fun WeekCalendarStrip(
 
         Spacer(modifier = Modifier.height(6.dp))
 
+        // Разделитель — просто разделитель, без зоны жеста.
         androidx.compose.material3.HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
@@ -315,15 +338,7 @@ private fun WeekRow(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                if (weekParityLabel != null) {
-                    Text(
-                        text = weekParityLabel,
-                        fontSize = 9.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                }
-                Text(
+                GlitchText(
                     text = DateUtils.formatDayOfWeekShort(date.dayOfWeek),
                     fontSize = 11.5.sp,
                     fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Medium,
@@ -351,7 +366,7 @@ private fun WeekRow(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
+                    GlitchText(
                         text = date.day.toString(),
                         fontSize = 14.5.sp,
                         fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.SemiBold,
@@ -410,19 +425,23 @@ private fun WeekRow(
 }
 
 /**
- * Модификатор жеста раскрытия/сворачивания календарика.
+ * Модификатор жеста раскрытия/сворачивания календарика (issue #3).
  *
- * Область захвата — весь календарик, сама область не красится, все чужие
- * клики и жесты продолжают работать:
+ * Требование владельца: область захвата — весь календарик, сама область
+ * не красится (модификатор не рисует ничего), а все чужие клики и жесты
+ * должны продолжать работать.
  *
+ * Как достигается:
  * 1. Первое нажатие наблюдается, но НЕ потребляется: клики по дням,
  *    «Сегодня», стрелкам и заголовку работают как раньше.
- * 2. Жест признаётся нашим только если вертикальное смещение превысило
- *    порог И вертикаль доминирует над горизонталью (иначе это свайп
- *    пейджера недели — не наш).
- * 3. До признания события не потребляются вообще. После признания —
+ * 2. Дальше отслеживается движение. Жест признаётся нашим только если
+ *    вертикальное смещение превысило порог И вертикаль доминирует над
+ *    горизонталью (иначе это горизонтальный свайп пейджера недели — не ours).
+ * 3. До признания события не потребляются вообще: пейджер скроллится,
+ *    тап-детекторы ждут своего. После признания — последующие события
  *    потребляются, чтобы список под лентой не дёрнулся.
- * 4. Один жест — одна ступень: порог срабатывает один раз.
+ * 4. Один жест — одна ступень: порог сбрасывается после срабатывания,
+ *    продолжение движения без отрыва пальца ничего не меняет.
  */
 private fun Modifier.calendarExpandGesture(
     onSwipeDown: () -> Unit,
@@ -437,8 +456,8 @@ private fun Modifier.calendarExpandGesture(
         while (!done) {
             val event = awaitPointerEvent()
             if (event.changes.any { it.isConsumed }) {
-                // Чужой жест уже в работе (пейджер перехватил свайп):
-                // выходим, не мешаем.
+                // Чужой жест уже в работе (например, пейджер недели
+                // перехватил горизонтальный свайп): выходим, не мешаем.
                 done = true
                 continue
             }
@@ -455,6 +474,8 @@ private fun Modifier.calendarExpandGesture(
                 }
             }
             if (handled) {
+                // Наш жест: после срабатывания потребляем перемещения,
+                // чтобы ниже лежащие слои (список пар) не скроллились.
                 event.changes.forEach { it.consume() }
             }
             if (event.changes.all { !it.pressed }) done = true

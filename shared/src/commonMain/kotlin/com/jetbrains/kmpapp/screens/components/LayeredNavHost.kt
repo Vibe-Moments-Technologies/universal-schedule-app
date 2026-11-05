@@ -61,6 +61,10 @@ fun LayeredNavHost(
         val widthPx = constraints.maxWidth.toFloat()
         val scope = rememberCoroutineScope()
 
+        // Корень — без слоёв и параллакса: ранний return, как до
+        // перестройки (перестройка «постоянного дерева» ломала корень —
+        // параллакс-сдвиг layerX=0 уводил его влево, правая половина
+        // экрана уходила в чёрный, репорт владельца).
         if (screen == null) {
             rootContent()
             return@BoxWithConstraints
@@ -72,12 +76,22 @@ fun LayeredNavHost(
         // LaunchedEffect и не влияет на последующие переходы.
         var skipInitialEnter by remember { mutableStateOf(initiallyRevealed) }
         var committed by remember(screen) { mutableStateOf(false) }
+
+        // Баг «вход в подстраницу иногда без анимации, потом сам
+        // пропадает» (репорт владельца): isBackTransition оставался true
+        // после выхода — СЛЕДУЮЩИЙ вход рождался «на месте» (layerX=0),
+        // без въезда; ещё один вход позже — флаг уже сброшен, анимация
+        // возвращалась. Отсюда плавающий характер. Фикс: флаг гасится
+        // в момент, когда слой его прочитал, — следующий вход всегда
+        // анимируется.
+        val enterOnPlace = isBackTransition || skipInitialEnter
+        if (isBackTransition) isBackTransition = false
         // Возврат: экран-родитель уже был под пальцем — стартуем сразу «на
         // месте» (0), иначе — въезд из-за правого края. Флаг читаем в момент
         // композиции: LaunchedEffect сработал бы кадром позже и новый экран
         // успевал мигнуть «за пределами» (баг на подстраницах 2-го уровня).
         val layerX = remember(screen) {
-            mutableFloatStateOf(if (isBackTransition || skipInitialEnter) 0f else widthPx)
+            mutableFloatStateOf(if (enterOnPlace) 0f else widthPx)
         }
 
         val back: (Float) -> Unit = { initialVelocity ->
@@ -93,11 +107,9 @@ fun LayeredNavHost(
         }
 
         LaunchedEffect(screen) {
-            if (isBackTransition) {
-                // Возврат: экран уже на месте, только сбрасываем флаг.
-                isBackTransition = false
-            } else if (skipInitialEnter) {
-                // Подстраница была уже открыта — просто показать, без въезда.
+            if (enterOnPlace) {
+                // Возврат или уже открытая подстраница: слой уже на месте,
+                // только гасим одноразовый флаг пропуска въезда.
                 skipInitialEnter = false
             } else {
                 // Въезд — с плавным торможением (LinearOutSlowIn): без
@@ -192,7 +204,8 @@ private fun Modifier.swipeBackLayer(
                     // Назад: быстрый флик ИЛИ дотянул четверть экрана.
                     // Скорость жеста передаётся в анимацию — страница уходит
                     // с той же скоростью, с которой её отпустили (без рывка).
-                    if (vx >= flingVelocityPx || layerX.floatValue >= max(120f, widthPx * 0.25f)) {
+                    val shouldGoBack = vx >= flingVelocityPx || layerX.floatValue >= max(120f, widthPx * 0.25f)
+                    if (shouldGoBack) {
                         onCommit(vx)
                     } else {
                         scope.launch {

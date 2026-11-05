@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -51,9 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
-import com.jetbrains.kmpapp.resources.Res
-import com.jetbrains.kmpapp.resources.appicon_new_dark
-import com.jetbrains.kmpapp.resources.appicon_new_light
+import kmp_app_template.shared.generated.resources.Res
+import kmp_app_template.shared.generated.resources.appicon_new_dark
+import kmp_app_template.shared.generated.resources.appicon_new_light
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -88,7 +90,7 @@ fun AboutScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = "О программе",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -138,27 +140,27 @@ fun AboutScreen(
                     }
                 }
             ) {
-                Text(
-                    text = "Расписание",
+                GlitchText(
+                    text = "Красава!",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
+                GlitchText(
                     text = AppVersion.DISPLAY_VERSION,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
+                GlitchText(
                     text = "© 2026 Vibe Moments Technologies",
                     fontSize = 12.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Наши права защищены · Не связано с учебными заведениями",
+                GlitchText(
+                    text = "Наши права защищены · Не связано с РТУ МИРЭА",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                 )
@@ -189,6 +191,9 @@ fun AboutScreen(
 /** Почта проекта: пишем письма через mailto. */
 private const val PROJECT_EMAIL = "vibe.moments.technologies@gmail.com"
 
+/** TG-бот поддержки (репорт владельца): быстрый канал вопросов. */
+private const val SUPPORT_BOT_URL = "https://t.me/krasava_sbot"
+
 @Composable
 private fun ContactsCard() {
     val uriHandler = LocalUriHandler.current
@@ -198,17 +203,26 @@ private fun ContactsCard() {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Text(
+            GlitchText(
                 text = "Контакты",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(10.dp))
+            // Почта — первая, далее TG-бот поддержки (запрос владельца:
+            // переименован и переставлен после почты), затем Issue.
             ContactRow(
                 icon = Icons.Default.Email,
                 tint = MaterialTheme.colorScheme.primary,
                 text = PROJECT_EMAIL,
                 onClick = { uriHandler.openUri("mailto:$PROJECT_EMAIL") }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            ContactRow(
+                icon = Icons.Default.Send,
+                tint = MaterialTheme.colorScheme.primary,
+                text = "Telegram Support Bot",
+                onClick = { uriHandler.openUri(SUPPORT_BOT_URL) }
             )
             Spacer(modifier = Modifier.height(4.dp))
             ContactRow(
@@ -243,7 +257,7 @@ private fun ContactRow(
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
-        Text(
+        GlitchText(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             fontSize = 13.sp,
@@ -281,12 +295,12 @@ private fun NavCard(
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                GlitchText(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
+                GlitchText(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -1,16 +1,28 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,46 +31,105 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.jetbrains.kmpapp.data.analytics.AnalyticsEvents
-import com.jetbrains.kmpapp.data.analytics.AppAnalytics
-import com.jetbrains.kmpapp.data.model.AppVersion
-
-/** Ссылки проекта — захардкожены (remote config удалён вместе с серверной привязкой). */
-private const val BOOSTY_URL = "https://boosty.to/vibe.moments.technologies"
+import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.config.RemoteConfigLoader
+import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
+import androidx.compose.runtime.collectAsState
 
 /**
  * Блок-ссылки на соцсети проекта: квадратные кнопки-иконки без подписей.
- * Только GitHub репозитория и Boosty.
+ * Ссылки берутся из удалённого конфига (config.json на gh-pages).
+ * Пустая ссылка → тост «скоро».
  */
 @Composable
 internal fun ProjectSocialLinks() {
     val uriHandler = LocalUriHandler.current
+    val configLoader: RemoteConfigLoader = koinInject()
+    val config by configLoader.config.collectAsState()
+    var toastMessage by remember { mutableStateOf<String?>(null) }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SocialIcon(
+                icon = GitHubMark,
+                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = "GitHub",
+                onClick = {
+                    uriHandler.openUri(config.socialLinks.github)
+                },
+                modifier = Modifier.weight(1f)
+            )
+            SocialIcon(
+                icon = TelegramMark,
+                tint = Color(0xFF29A9EB),
+                contentDescription = "Telegram",
+                onClick = {
+                    uriHandler.openUri(config.socialLinks.telegram)
+                },
+                modifier = Modifier.weight(1f)
+            )
+            SocialIcon(
+                icon = BoostyMark,
+                tint = Color(0xFFF15F2F),
+                contentDescription = "Boosty",
+                onClick = {
+                    val url = config.socialLinks.boosty
+                    if (url.isNotBlank()) uriHandler.openUri(url)
+                    else toastMessage = "Поддержка разработчиков скоро появится"
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
+        ComingSoonToast(
+            message = toastMessage,
+            onDismiss = { toastMessage = null },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+/**
+ * Лёгкий тост в теме приложения: fade-анимация, автоскрытие ~2.5с, тап
+ * закрывает. Проще и тише системного снекбара, который рвёт тему.
+ */
+@Composable
+private fun ComingSoonToast(
+    message: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(message) {
+        if (message != null) {
+            delay(2500)
+            onDismiss()
+        }
+    }
+    AnimatedVisibility(
+        visible = message != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
     ) {
-        SocialIcon(
-            icon = GitHubMark,
-            tint = MaterialTheme.colorScheme.onSurface,
-            contentDescription = "GitHub",
-            onClick = {
-                AppAnalytics.logEvent(AnalyticsEvents.NAV_SOCIAL_OPEN, mapOf("network" to "github"))
-                uriHandler.openUri(AppVersion.GITHUB_REPO_URL)
-            },
-            modifier = Modifier.weight(1f)
-        )
-        SocialIcon(
-            icon = BoostyMark,
-            tint = Color(0xFFF15F2F),
-            contentDescription = "Boosty",
-            onClick = {
-                AppAnalytics.logEvent(AnalyticsEvents.NAV_SOCIAL_OPEN, mapOf("network" to "boosty"))
-                uriHandler.openUri(BOOSTY_URL)
-            },
-            modifier = Modifier.weight(1f)
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .clickable(onClick = onDismiss)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            GlitchText(
+                text = message ?: "",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -123,6 +194,46 @@ internal val GitHubMark: ImageVector by lazy {
             curveTo(14.97f, 23.43f, 15.18f, 23.79f, 15.795f, 23.685f)
             curveTo(20.565f, 22.11f, 24f, 17.61f, 24f, 12.3f)
             curveTo(24f, 5.667f, 18.63f, 0.297f, 12f, 0.297f)
+            close()
+        }
+    }.build()
+}
+
+/** Логотип Telegram (Simple Icons, 24×24). */
+internal val TelegramMark: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "TelegramMark",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).apply {
+        path(fill = SolidColor(Color(0xFF29A9EB))) {
+            moveTo(11.944f, 0f)
+            curveTo(5.351f, 0f, 0f, 5.351f, 0f, 11.944f)
+            curveTo(0f, 18.538f, 5.351f, 23.889f, 11.944f, 23.889f)
+            curveTo(18.538f, 23.889f, 23.889f, 18.538f, 23.889f, 11.944f)
+            curveTo(23.889f, 5.351f, 18.538f, 0f, 11.944f, 0f)
+            close()
+            moveTo(17.488f, 8.161f)
+            curveTo(17.31f, 10.037f, 16.539f, 14.590f, 16.146f, 16.692f)
+            curveTo(15.981f, 17.579f, 15.652f, 17.877f, 15.337f, 17.905f)
+            curveTo(14.650f, 17.968f, 14.129f, 17.452f, 13.464f, 17.016f)
+            curveTo(12.421f, 16.333f, 11.834f, 15.908f, 10.822f, 15.241f)
+            curveTo(9.650f, 14.468f, 10.404f, 14.045f, 11.068f, 13.354f)
+            curveTo(11.241f, 13.173f, 14.275f, 10.411f, 14.334f, 10.163f)
+            curveTo(14.341f, 10.131f, 14.349f, 10.012f, 14.275f, 9.960f)
+            curveTo(14.202f, 9.907f, 14.098f, 9.926f, 14.02f, 9.941f)
+            curveTo(13.913f, 9.963f, 12.256f, 11.057f, 9.045f, 13.224f)
+            curveTo(8.572f, 13.549f, 8.143f, 13.707f, 7.757f, 13.698f)
+            curveTo(7.331f, 13.688f, 6.514f, 13.457f, 5.905f, 13.259f)
+            curveTo(5.157f, 13.017f, 4.564f, 12.889f, 4.616f, 12.478f)
+            curveTo(4.643f, 12.264f, 4.936f, 12.045f, 5.493f, 11.822f)
+            curveTo(8.936f, 10.322f, 11.231f, 9.333f, 12.379f, 8.855f)
+            curveTo(15.658f, 7.491f, 16.34f, 7.253f, 16.784f, 7.245f)
+            curveTo(16.882f, 7.243f, 17.102f, 7.268f, 17.245f, 7.383f)
+            curveTo(17.365f, 7.480f, 17.398f, 7.611f, 17.414f, 7.703f)
+            curveTo(17.434f, 7.816f, 17.447f, 8.007f, 17.437f, 8.161f)
             close()
         }
     }.build()

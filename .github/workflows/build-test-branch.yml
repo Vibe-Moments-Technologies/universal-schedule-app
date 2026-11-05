@@ -108,7 +108,9 @@ jobs:
 
   build_ipa:
     name: 🍏 Test Build iOS Unsigned IPA
-    runs-on: macos-15
+    # macos-26 даёт Xcode 26 и SDK iOS 26+: только там объявлено семейство
+    # виджетов systemExtraLargePortrait (Extra Large для iPhone).
+    runs-on: macos-26
     needs: resolve
     if: inputs.build_ipa
     outputs:
@@ -156,12 +158,26 @@ jobs:
 
       - name: 🛠️ Set Xcode Version
         run: |
-          if [ -d "/Applications/Xcode_16.4.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
-          elif [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          # Требуется Xcode 26: семейство виджетов systemExtraLargePortrait
+          # (Extra Large для iPhone) объявлено только в SDK iOS 26+.
+          # Фолбэков нет намеренно — на старом SDK код виджета не компилируется,
+          # поэтому честнее упасть здесь с понятным сообщением, чем выпустить
+          # сборку без четвёртого виджета.
+          FOUND=""
+          for V in 26.6 26.5 26.4 26.3; do
+            if [ -d "/Applications/Xcode_${V}.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_${V}.app/Contents/Developer"
+              FOUND="$V"
+              break
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error::Xcode 26 не найден на раннере. Доступно:"
+            ls -d /Applications/Xcode*.app || true
+            exit 1
           fi
           xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: 🔨 Build iOS App (no codesign)
         run: |
@@ -172,9 +188,29 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            DEBUG_INFORMATION_FORMAT=dwarf \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build
+
+      - name: 🕯️ Upload dSYM to Sentry
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          cd iosApp
+          sentry-cli debug-files upload --org l1ratch-dev --project krasava-app \
+            build/Build/Products/Release-iphoneos \
+            ../shared/build/xcode-frameworks
+
+      - name: 🔏 Ad-hoc подпись с entitlements (App Group для виджета)
+        # Ad-hoc (identity "-") вшивает entitlements в бинарник без сертификата;
+        # инструмент переподписи сохранит App Group на .appex. Вложенные первыми.
+        run: |
+          cd iosApp
+          APP_PATH=$(find build -name "*.app" -type d | head -n 1)
+          codesign --force --sign - --entitlements KrasavaWidget/KrasavaWidget.entitlements "$APP_PATH/PlugIns/KrasavaWidget.appex"
+          codesign --force --sign - --entitlements iosApp/iosApp.entitlements "$APP_PATH"
 
       - name: 📦 Package Unsigned IPA
         run: |

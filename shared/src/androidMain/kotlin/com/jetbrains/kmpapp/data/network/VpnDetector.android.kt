@@ -8,5 +8,10 @@ import com.jetbrains.kmpapp.data.storage.AndroidContextProvider
 actual fun detectVpnActive(): Boolean {
     val context = AndroidContextProvider.context ?: return false
     val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-    return cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+    return try {
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+    } catch (_: SecurityException) {
+        // ACCESS_NETWORK_STATE может отсутствовать (старые сборки/прошивки)
+        false
+    }
 }

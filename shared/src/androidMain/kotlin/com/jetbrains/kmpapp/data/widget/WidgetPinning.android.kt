@@ -42,10 +42,13 @@ actual fun requestScheduleWidgetPin(): Boolean {
                 .commit()
         }
         // Success-callback: срабатывает после подтверждения пользователем.
-        // Колбэк ведёт в неинтерактивную ScheduleWidgetApplyActivity: она
-        // пишет выбор в Glance-состояние нового экземпляра (нет параметров —
-        // просто закрывается) и помечает «диалог не был подавлен» для
-        // экрана настроек.
+        // Из приложения параметры выбираются ЗАРАНЕЕ — внутренний
+        // конфигуратор (решение владельца: лаунчеры системный
+        // конфигуратор при добавлении из приложения всё равно не
+        // показывают). Колбэк ведёт в неинтерактивную
+        // ScheduleWidgetApplyActivity: она пишет выбор в Glance-состояние
+        // нового экземпляра (нет параметров — просто закрывается) и
+        // помечает «диалог не был подавлен» для экрана настроек.
         val configIntent = Intent().apply {
             setClassName(context.packageName, WIDGET_APPLY_CLASS)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -61,7 +64,7 @@ actual fun requestScheduleWidgetPin(): Boolean {
 }
 
 /** Тот же файл prefs, что у ScheduleWidgetStore (общий контейнер). */
-internal const val WIDGET_PREFS = "uschedule_widget"
+internal const val WIDGET_PREFS = "krasava_widget"
 internal const val KEY_PENDING_TARGET = "pending_widget_target"
 internal const val KEY_PENDING_SHORT = "pending_widget_short_names"
 
@@ -80,3 +83,4 @@ fun consumePendingWidgetConfig(context: android.content.Context): Pair<Int, Bool
     prefs.edit().remove(KEY_PENDING_TARGET).remove(KEY_PENDING_SHORT).commit()
     return config
 }
+

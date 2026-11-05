@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         ### Спасибо за помощь в улучшении приложения!
-        Пожалуйста, перед созданием убедитесь, что вы используете последнюю версию из раздела [Releases](https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases) и похожая проблема ещё не была описана в [открытых или закрытых Issue](https://github.com/Vibe-Moments-Technologies/universal-schedule-app/issues).
+        Пожалуйста, перед созданием убедитесь, что вы используете последнюю версию из раздела [Releases](https://github.com/Vibe-Moments-Technologies/krasava-app/releases) и похожая проблема ещё не была описана в [открытых или закрытых Issue](https://github.com/Vibe-Moments-Technologies/krasava-app/issues).
 
   - type: dropdown
     id: platform
@@ -45,9 +45,9 @@ body:
       label: Раздел приложения, в котором возникла проблема
       options:
         - "Расписание пар (главный экран)"
-        - "Конфигуратор расписания / импорт и экспорт"
+        - "Свободные аудитории"
         - "Задачи и предметы"
-        - "Уведомления о парах"
+        - "Карта кампусов"
         - "Другое / Настройки / О программе"
         - "При запуске приложения (краш / вылет)"
         - "Другое"

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Branch AI Reviewer & Diff Analyzer for universal-schedule-app
+Branch AI Reviewer & Diff Analyzer for krasava-app
 Analyzes differences between a contributor branch and main,
 runs heuristic & architectural checks for KMP/Compose,
 and generates a deep Russian impact analysis.
@@ -226,7 +226,7 @@ def query_ai_review(git_info):
 
     commits_text = "\n".join(f"- {c}" for c in git_info['commits'])
 
-    system_prompt = """Ты — ведущий мобильный архитектор открытого проекта Расписание (Kotlin Multiplatform + Compose Multiplatform для Android и iOS).
+    system_prompt = """Ты — ведущий мобильный архитектор открытого проекта Красава! (Kotlin Multiplatform + Compose Multiplatform для Android и iOS).
 Оцени изменения из ветки контрибьютора относительно main на русском языке.
 
 Формат ответа:
@@ -367,7 +367,7 @@ def generate_report(git_info, domain_analysis, heuristics, ai_review):
     lines.append("")
 
     lines.append("---")
-    lines.append("*💡 Сгенерировано автоматически инструментом Branch AI Reviewer для проекта Расписание.*\n")
+    lines.append("*💡 Сгенерировано автоматически инструментом Branch AI Reviewer для проекта Красава!.*\n")
 
     return "\n".join(lines)
 

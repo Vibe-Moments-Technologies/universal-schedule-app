@@ -50,7 +50,7 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
         return false
     }
 
-    private static let authorizedKey = "uschedule_notifications_authorized"
+    private static let authorizedKey = "krasava_notifications_authorized"
 
     /// Асинхронный перерасчёт кэша статуса разрешения.
     static func refreshAuthorizationCache() {
@@ -65,13 +65,16 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
     /// UserDefaults, чтобы после перезапуска можно было синхронно снять
     /// старую партию без гонки с новой постановкой.
     private var scheduledLessonIds: Set<String>
-    private let scheduledIdsKey = "uschedule_scheduled_lesson_ids"
-    private let queue = DispatchQueue(label: "ru.vibemoments.universalschedule.notifications")
+    private let scheduledIdsKey = "krasava_scheduled_lesson_ids"
+    private let queue = DispatchQueue(label: "ru.vibemoments.krasava.notifications")
 
     init() {
         scheduledLessonIds = Set(UserDefaults.standard.stringArray(forKey: scheduledIdsKey) ?? [])
     }
 
+    /// Субтитл: iOS рендерит его мелким текстом рядом с заголовком
+    /// («в углу» баннера) — так Apple-календарь пишет «через 5 мин»
+    /// (репорт владельца). Относительное будущее время — не в body.
     func schedule(id: String, title: String, subtitle: String, body: String, dateEpochMillis: Int64) {
         let content = UNMutableNotificationContent()
         content.title = title

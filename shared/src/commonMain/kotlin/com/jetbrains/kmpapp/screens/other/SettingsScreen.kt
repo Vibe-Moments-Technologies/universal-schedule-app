@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.other
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,25 +15,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Widgets
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,17 +41,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,15 +60,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.data.model.ThemeMode
-import com.jetbrains.kmpapp.data.model.SemesterConfig
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.widget.WidgetPinFeedback
 import com.jetbrains.kmpapp.data.widget.isScheduleWidgetPinningSupported
 import com.jetbrains.kmpapp.data.widget.requestScheduleWidgetPin
+import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+
+import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 /**
  * Ждать открытия конфигуратора виджета после запроса закрепления, прежде
@@ -77,43 +85,76 @@ import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
  */
 private const val WIDGET_PIN_DIALOG_TIMEOUT_MS = 5_000L
 
+/** «По умолчанию» в конфигураторах виджета: цель уведомлений (id < 0). */
+private const val DEFAULT_WIDGET_TARGET_ID = -1
+
 @Composable
 fun SettingsScreen(
     viewModel: OtherViewModel,
     onBack: () -> Unit,
+    onOpenDataAndCache: () -> Unit,
+    onOpenDockSettings: () -> Unit,
     onOpenTaskSettings: () -> Unit,
+    onOpenIconPicker: () -> Unit = {},
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
-    onOpenThemedThemes: () -> Unit = {},
+    onOpenScheduleCalendar: () -> Unit = {},
+    onOpenServiceSettings: () -> Unit = {},
     onOpenSaperSettings: () -> Unit = {},
+    onOpenThemedThemes: () -> Unit = {},
+    onOpenLessonColors: () -> Unit = {},
     onOpenTetrisSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
 
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
+    val hideAdditionalLessons by viewModel.hideAdditionalLessons.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
+    val calendarSwipeCollapse by viewModel.calendarSwipeCollapse.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val isKawaiiTheme by viewModel.isKawaiiTheme.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
-    val tasksEnabled by viewModel.tasksEnabled.collectAsState()
-    val gamesEnabled by viewModel.gamesEnabled.collectAsState()
-    val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
+    val notificationsTargetId by viewModel.notificationsTargetId.collectAsState()
+    val vpnWarningEnabled by viewModel.vpnWarningEnabled.collectAsState()
+    val savedTargets by viewModel.savedTargets.collectAsState()
+    val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
+    val dockHidden by viewModel.dockHidden.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
     var showKawaiiDialog by remember { mutableStateOf(false) }
     var showCustomMinutesDialog by remember { mutableStateOf(false) }
     var customMinutesDraft by remember { mutableStateOf("") }
-    var widgetConfigShortNames by remember { mutableStateOf(false) }
+    var showNotificationsTargetDialog by remember { mutableStateOf(false) }
     var showWidgetPinFailedDialog by remember { mutableStateOf(false) }
-    val semester by viewModel.semester.collectAsState()
+    // Предупреждения — диалогами поверх экрана (решение владельца):
+    // снекбар внизу не виден за навигационной панелью.
+    var showNotificationsDeniedDialog by remember { mutableStateOf(false) }
+    // Внутренний конфигуратор виджета (добавление из приложения).
+    var showWidgetConfigDialog by remember { mutableStateOf(false) }
+    var widgetConfigTargetId by remember { mutableStateOf<Int?>(null) }
+    var widgetConfigShortNames by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Пользователь мог выдать разрешение в системном диалоге и вернуться:
+    // откатываем «включено без разрешения» (старые установки/перенос),
+    // чтобы переключатель не врал. false НЕ запрашивает разрешение —
+    // иначе системный диалог (resumed-activity) ронял приложение
+    // при первом входе на экран.
+    LaunchedEffect(Unit) {
+        snapshotFlow { notificationsEnabled }
+            .collect { enabled ->
+                if (enabled && !NotificationsManager.isAuthorized()) {
+                    viewModel.setNotificationsEnabled(false)
+                }
+            }
+    }
 
     // Скролл живёт в ViewModel: LayeredNavHost пересоздаёт этот экран в
     // другом слое при переходе в подраздел — общий ScrollState переживает
@@ -138,7 +179,7 @@ fun SettingsScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
+                GlitchText(
                     text = "Настройки",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -172,18 +213,18 @@ fun SettingsScreen(
                         sakuraTapCount = 0
                         // Квест из восьми быстрых тычков по иконке раздела
                         // теперь выдаёт «Кавай»: Сакура доступна по умолчанию
-                        // и своего квеста больше не имеет.
+                        // и своего квента больше не имеет.
                         showKawaiiDialog = true
                     }
                 }
             ) {
-                Text(
+                GlitchText(
                     text = "Тема приложения",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
+                GlitchText(
                     text = "Выберите желаемый стиль интерфейса",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -199,7 +240,7 @@ fun SettingsScreen(
                             selected = themeMode == mode,
                             onClick = { viewModel.setThemeMode(mode) },
                             label = {
-                                Text(
+                                GlitchText(
                                     text = mode.displayName,
                                     fontSize = 13.sp,
                                     modifier = Modifier.fillMaxWidth(),
@@ -212,6 +253,39 @@ fun SettingsScreen(
                     }
                 }
 
+                // App icon picker: only where the platform supports it (iOS)
+                if (AppIconManager.supportsSwitching) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClick = onOpenIconPicker)
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            GlitchText(
+                                text = "Иконка приложения",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            GlitchText(
+                                text = "Новая или старая · тема — автоматически",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Открыть",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 // Тематические темы: сакура по умолчанию плюс найденные
                 // квестами. Отдельная подстраница с тумблерами.
                 Spacer(modifier = Modifier.height(12.dp))
@@ -220,83 +294,112 @@ fun SettingsScreen(
                     subtitle = "Сакура, кавай и найденные квестами",
                     onClick = onOpenThemedThemes
                 )
+
+                // Цвета типов занятий: бейджи карточек и точки календаря
+                Spacer(modifier = Modifier.height(12.dp))
+                SettingsNavigationRow(
+                    title = "Цвета занятий",
+                    subtitle = "Акценты для лекций, практик, лабораторных",
+                    onClick = onOpenLessonColors
+                )
             }
 
-            // Section: Разделы приложения
+            // Section: Navigation & Dock
             SettingsSectionCard(
-                title = "Разделы",
+                title = "Интерфейс и навигация",
                 icon = Icons.Default.Tune
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onOpenDockSettings)
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Задачи",
+                        GlitchText(
+                            text = "Настройка нижней панели",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Показывать раздел «Задачи» в нижней панели",
+                        GlitchText(
+                            text = "Порядок и состав страниц на панели",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = tasksEnabled,
-                        onCheckedChange = { viewModel.setTasksEnabled(it) }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Открыть",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
+                // Скрыть док целиком: «Другое» становится подстраницей
+                // расписания (шестерёнка в топбаре), сервисы — блоками в нём.
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Игры",
+                        GlitchText(
+                            text = "Скрывать панель навигации",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Сапёр и Тетрис — с рекордами и настройками",
+                        GlitchText(
+                            text = "«Другое» откроется шестерёнкой на странице расписания, сервисы — блоками внутри него",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = gamesEnabled,
-                        onCheckedChange = { viewModel.setGamesEnabled(it) }
-                    )
+                    Switch(checked = dockHidden, onCheckedChange = viewModel::setDockHidden)
                 }
-                if (gamesEnabled) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                    SettingsNavigationRow(
-                        title = "Настройки Сапёра",
-                        subtitle = "Управление, вертикальная доска",
-                        onClick = onOpenSaperSettings
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    SettingsNavigationRow(
-                        title = "Настройки Тетриса",
-                        subtitle = "Управление и сложность",
-                        onClick = onOpenTetrisSettings
+            }
+
+            // Section: Tasks Settings (temporarily hidden)
+            /*
+            SettingsSectionCard(
+                title = "Задачи и дедлайны",
+                icon = Icons.Default.TaskAlt
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onOpenTaskSettings)
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        GlitchText(
+                            text = "Настройки задач",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        GlitchText(
+                            text = "Генератор лабораторных, приоритеты, очистка базы",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Открыть",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
             }
+            */
 
             // Section: Schedule — ссылки на подстраницы
             SettingsSectionCard(
@@ -305,7 +408,7 @@ fun SettingsScreen(
             ) {
                 SettingsNavigationRow(
                     title = "Отображение",
-                    subtitle = "Пустые пары, сокращения, авто-скролл",
+                    subtitle = "Пустые пары, ДОП-занятия, сокращения, авто-скролл",
                     onClick = onOpenScheduleDisplay
                 )
                 HorizontalDivider(
@@ -316,6 +419,68 @@ fun SettingsScreen(
                     title = "Прогресс и индикаторы",
                     subtitle = "Полоски времени, прогресс перемены",
                     onClick = onOpenScheduleProgress
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                SettingsNavigationRow(
+                    title = "Календарь",
+                    subtitle = "Сворачивание свайпом",
+                    onClick = onOpenScheduleCalendar
+                )
+            }
+
+            // Section: Widget — закрепление на главном экране
+            if (isScheduleWidgetPinningSupported()) {
+                SettingsSectionCard(
+                    title = "Виджет",
+                    icon = Icons.Default.Widgets
+                ) {
+                    SettingsActionRow(
+                        title = "Добавить на главный экран",
+                        subtitle = "Выберите расписание — система предложит разместить виджет. Убрать — долгим нажатием → «Удалить»",
+                        icon = Icons.Default.Add,
+                        onClick = {
+                            // Внутренний конфигуратор (решение владельца):
+                            // лаунчеры не показывают системный при добавлении
+                            // из приложения, поэтому параметры выбираем здесь.
+                            showWidgetConfigDialog = true
+                        }
+                    )
+                }
+            }
+
+            // Section: Service settings
+            SettingsSectionCard(
+                title = "Параметры сервисов",
+                icon = Icons.Default.EditNote
+            ) {
+                SettingsNavigationRow(
+                    title = "Конспекты",
+                    subtitle = "Настройки блокнота и заметок",
+                    onClick = onOpenServiceSettings
+                )
+            }
+
+            // Section: Games — настройки «Сапера» и «Тетриса»
+            SettingsSectionCard(
+                title = "Игры",
+                icon = Icons.Default.Bolt
+            ) {
+                SettingsNavigationRow(
+                    title = "Сапер",
+                    subtitle = "Ориентация доски, предупреждение о мелких клетках",
+                    onClick = onOpenSaperSettings
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                SettingsNavigationRow(
+                    title = "Тетрис",
+                    subtitle = "Вариант управления, сложность и скорость падения",
+                    onClick = onOpenTetrisSettings
                 )
             }
 
@@ -331,14 +496,14 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
+                            GlitchText(
                                 text = "Напоминать о занятиях",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Локальное напоминание до начала пары. Работает без интернета, прямо на устройстве",
+                            GlitchText(
+                                text = "Локальное напоминание до начала пары выбранного расписания. Работает без интернета, прямо на устройстве",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -346,16 +511,66 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Switch(
                             checked = notificationsEnabled,
-                            onCheckedChange = { viewModel.setNotificationsEnabled(it) }
+                            onCheckedChange = { wanted ->
+                                // Статус читается в момент клика (без remember-кэша):
+                                // после выдачи прав в системном окне повторное
+                                // включение проходит сразу, без перезапуска
+                                // (репорт тестера).
+                                if (wanted && !NotificationsManager.isAuthorized()) {
+                                    // Первая установка: явно просим системное
+                                    // разрешение (тумблер остаётся «выкл» —
+                                    // включится после выдачи). Системный диалог
+                                    // асинхронен; если выдали — повторное
+                                    // включение пройдёт мгновенно; отказ дважды
+                                    // (ОС прячет диалог навсегда) — предупреждение
+                                    // поверх экрана объясняет путь через настройки.
+                                    NotificationsManager.requestAuthorization()
+                                    showNotificationsDeniedDialog = true
+                                } else {
+                                    viewModel.setNotificationsEnabled(wanted)
+                                }
+                            }
                         )
                     }
 
-                    if (notificationsEnabled) {
+                    // Выбор цели — всегда доступен (репорт тестера): цель
+                    // уведомлений — ещё и дефолт для виджетов («По умолчанию»
+                    // в их конфигураторах). Прятать её за включённый тумблер
+                    // значило «без уведомлений нельзя менять группу виджета».
+                    val notificationTarget = savedTargets.firstOrNull { it.id == notificationsTargetId }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showNotificationsTargetDialog = true }
+                            .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                GlitchText(
+                                    text = "Расписание для уведомлений",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                GlitchText(
+                                    text = notificationTarget?.fullTitle ?: "Выберите расписание",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Выбрать расписание",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
                         val presets = listOf(5, 10, 15)
                         val isCustom = notifyMinutesBefore !in presets
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(
+                        GlitchText(
                             text = "За сколько минут до пары",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
@@ -370,7 +585,7 @@ fun SettingsScreen(
                                     selected = notifyMinutesBefore == minutes,
                                     onClick = { viewModel.setNotifyMinutesBefore(minutes) },
                                     label = {
-                                        Text(
+                                        GlitchText(
                                             text = "$minutes мин",
                                             fontSize = 13.sp,
                                             modifier = Modifier.fillMaxWidth(),
@@ -388,7 +603,7 @@ fun SettingsScreen(
                                     showCustomMinutesDialog = true
                                 },
                                 label = {
-                                    Text(
+                                    GlitchText(
                                         text = "Своё",
                                         fontSize = 13.sp,
                                         modifier = Modifier.fillMaxWidth(),
@@ -407,7 +622,7 @@ fun SettingsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
+                                GlitchText(
                                     text = "Своё: $notifyMinutesBefore мин",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -422,14 +637,13 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                    }
                 }
             }
 
-            // Section: Статистика (AppMetrica)
+            // Section: Additional features (объединённый блок)
             SettingsSectionCard(
-                title = "Статистика",
-                icon = Icons.Default.Analytics
+                title = "Дополнительный функционал",
+                icon = Icons.Default.Tune
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -437,95 +651,23 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Отправлять анонимную статистику",
+                        GlitchText(
+                            text = "Предупреждения о VPN",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Помогает находить падения и понимать, какие разделы чаще используются. Анонимно, без личных данных и содержимого расписания",
+                        GlitchText(
+                            text = "Показывать предупреждение, если VPN может помешать обновлению расписания",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Switch(
-                        checked = analyticsEnabled,
-                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
+                        checked = vpnWarningEnabled,
+                        onCheckedChange = { viewModel.setVpnWarningEnabled(it) }
                     )
-                }
-            }
-
-            // Section: Виджет расписания (закрепление на рабочем столе)
-            if (com.jetbrains.kmpapp.data.widget.isScheduleWidgetPinningSupported()) {
-                SettingsSectionCard(
-                    title = "Виджет расписания",
-                    icon = Icons.Default.Widgets
-                ) {
-                    Column {
-                        Text(
-                            text = "Ближайшие пары семестра прямо на рабочем столе: аудитория, время и дисциплина. Расписание одно — виджет показывает его всегда",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { widgetConfigShortNames = !widgetConfigShortNames }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Сокращать длинные названия",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Инициалы слов: «Базы данных и управление ими» → «БДиУИ»",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Checkbox(
-                                checked = widgetConfigShortNames,
-                                onCheckedChange = { widgetConfigShortNames = it }
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = {
-                                // Расписание одно: цель — активный семестр.
-                                // Тот же контракт, что у ApplyActivity.
-                                if (semester != null) {
-                                    com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.setPendingConfig(
-                                        com.jetbrains.kmpapp.data.model.SemesterConfig.TARGET_ID,
-                                        widgetConfigShortNames
-                                    )
-                                }
-                                if (com.jetbrains.kmpapp.data.widget.requestScheduleWidgetPin()) {
-                                    com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.markPinRequested()
-                                    val requestedAt = com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.lastPinRequestedAtMillis
-                                    scope.launch {
-                                        delay(WIDGET_PIN_DIALOG_TIMEOUT_MS)
-                                        if (com.jetbrains.kmpapp.data.widget.WidgetPinFeedback.lastConfigureOpenedAtMillis < requestedAt) {
-                                            showWidgetPinFailedDialog = true
-                                        }
-                                    }
-                                } else {
-                                    showWidgetPinFailedDialog = true
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Добавить виджет")
-                        }
-                    }
                 }
             }
 
@@ -536,15 +678,207 @@ fun SettingsScreen(
     if (showWidgetPinFailedDialog) {
         AlertDialog(
             onDismissRequest = { showWidgetPinFailedDialog = false },
-            title = { Text("Не удалось добавить виджет") },
+            title = { GlitchText("Не удалось добавить виджет") },
             text = {
-                Text(
-                    "Добавьте его вручную: долгое нажатие на рабочем столе → «Виджеты» → «Расписание»."
+                GlitchText(
+                    "Добавьте его вручную: долгое нажатие на рабочем столе → «Виджеты» → «Красава» → «Расписание»."
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showWidgetPinFailedDialog = false }) {
-                    Text("Понятно")
+                    GlitchText("Понятно")
+                }
+            }
+        )
+    }
+
+    if (showWidgetConfigDialog) {
+        // Внутренний конфигуратор виджета (решение владельца): лаунчеры
+        // не показывают системный конфигуратор при добавлении из
+        // приложения — выбираем параметры здесь, закрепление после
+        // подтверждения применит их к новому экземпляру молча
+        // (ScheduleWidgetApplyActivity из success-callback).
+        AlertDialog(
+            onDismissRequest = { showWidgetConfigDialog = false },
+            title = { GlitchText("Виджет расписания") },
+            text = {
+                if (savedTargets.isEmpty()) {
+                    GlitchText("Сначала добавьте хотя бы одно расписание.")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        GlitchText(
+                            text = "Расписание",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        // «По умолчанию» — цель уведомлений, как в системном
+                        // конфигураторе: тот же фолбэк движка виджета.
+                        val configRows = savedTargets
+                        val effectiveId = widgetConfigTargetId
+                            ?: notificationsTargetId
+                            ?: configRows.firstOrNull()?.id
+                        configRows.forEach { target ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { widgetConfigTargetId = target.id }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    GlitchText(
+                                        text = target.fullTitle,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                RadioButton(
+                                    selected = target.id == effectiveId,
+                                    onClick = { widgetConfigTargetId = target.id }
+                                )
+                            }
+                        }
+                        GlitchText(
+                            text = "«По умолчанию» = расписание уведомлений. Виджеты без своего выбора берут его же.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { widgetConfigShortNames = !widgetConfigShortNames }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                GlitchText(
+                                    text = "Сокращать длинные названия",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                GlitchText(
+                                    text = "Инициалы слов: «Базы данных и управление ими» → «БДиУИ»",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Checkbox(
+                                checked = widgetConfigShortNames,
+                                onCheckedChange = { widgetConfigShortNames = it }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showWidgetConfigDialog = false
+                        if (savedTargets.isEmpty()) return@TextButton
+                        // Конкретная цель либо «По умолчанию» (-1 = цель
+                        // уведомлений) — тот же контракт, что у системного
+                        // конфигуратора и ApplyActivity.
+                        val chosen = widgetConfigTargetId
+                            ?: notificationsTargetId
+                            ?: savedTargets.firstOrNull()?.id
+                        val targetId = chosen ?: DEFAULT_WIDGET_TARGET_ID
+                        WidgetPinFeedback.setPendingConfig(targetId, widgetConfigShortNames)
+                        if (requestScheduleWidgetPin()) {
+                            // OEM-запрет может подавить диалог молча: ждём
+                            // метку «закрепление подтверждено» (её ставит
+                            // ScheduleWidgetApplyActivity), её нет —
+                            // предупреждение поверх экрана.
+                            WidgetPinFeedback.markPinRequested()
+                            val requestedAt = WidgetPinFeedback.lastPinRequestedAtMillis
+                            scope.launch {
+                                delay(WIDGET_PIN_DIALOG_TIMEOUT_MS)
+                                if (WidgetPinFeedback.lastConfigureOpenedAtMillis < requestedAt) {
+                                    showWidgetPinFailedDialog = true
+                                }
+                            }
+                        } else {
+                            showWidgetPinFailedDialog = true
+                        }
+                    }
+                ) {
+                    GlitchText("Добавить виджет")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWidgetConfigDialog = false }) {
+                    GlitchText("Отмена")
+                }
+            }
+        )
+    }
+
+    if (showNotificationsDeniedDialog) {
+        // Диалог поверх экрана (решение владельца: снекбар внизу не виден).
+        // Тумблер уже вернулся в «выкл»: объясняем, что делать дальше.
+        AlertDialog(
+            onDismissRequest = { showNotificationsDeniedDialog = false },
+            title = { GlitchText("Уведомления не разрешены") },
+            text = {
+                GlitchText(
+                    "Напоминания включатся, только когда система разрешит приложению показывать уведомления. " +
+                        "Разрешите их для «Красавы» в настройках телефона и вернитесь включить напоминания."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showNotificationsDeniedDialog = false }) {
+                    GlitchText("Понятно")
+                }
+            }
+        )
+    }
+
+    if (showNotificationsTargetDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotificationsTargetDialog = false },
+            title = { GlitchText("Расписание для уведомлений") },
+            text = {
+                if (savedTargets.isEmpty()) {
+                    GlitchText("Сначала добавьте хотя бы одно расписание.")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        savedTargets.forEach { target ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.setNotificationsTargetId(target.id)
+                                        showNotificationsTargetDialog = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    GlitchText(
+                                        text = target.fullTitle,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    GlitchText(
+                                        text = target.type.displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (target.id == notificationsTargetId) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Выбрано",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showNotificationsTargetDialog = false }) {
+                    GlitchText("Закрыть")
                 }
             }
         )
@@ -553,14 +887,14 @@ fun SettingsScreen(
     if (showCustomMinutesDialog) {
         AlertDialog(
             onDismissRequest = { showCustomMinutesDialog = false },
-            title = { Text("Своё время") },
+            title = { GlitchText("Своё время") },
             text = {
                 OutlinedTextField(
                     value = customMinutesDraft,
                     onValueChange = { text ->
                         customMinutesDraft = text.filter { it.isDigit() }.take(3)
                     },
-                    label = { Text("Минут до пары (1–120)") },
+                    label = { GlitchText("Минут до пары (1–120)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
@@ -575,12 +909,12 @@ fun SettingsScreen(
                         showCustomMinutesDialog = false
                     }
                 ) {
-                    Text("Сохранить")
+                    GlitchText("Сохранить")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomMinutesDialog = false }) {
-                    Text("Отменить")
+                    GlitchText("Отменить")
                 }
             }
         )
@@ -589,11 +923,11 @@ fun SettingsScreen(
     if (showKawaiiDialog) {
         AlertDialog(
             onDismissRequest = { showKawaiiDialog = false },
-            title = { Text("Кавай 🎀", fontWeight = FontWeight.Bold) },
+            title = { GlitchText("Кавай 🎀", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text(
-                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Кавай»: полностью анимешная, милая, в пастельно-сиреневых тонах!",
+                    GlitchText(
+                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Кавай»: полностью анимешная, милая, в бело-розовых тонах!",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -602,7 +936,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
+                        GlitchText(
                             text = "Кавай",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
@@ -616,7 +950,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showKawaiiDialog = false }) {
-                    Text("Готово")
+                    GlitchText("Готово")
                 }
             }
         )
@@ -639,13 +973,13 @@ private fun SettingsNavigationRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
+            GlitchText(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            GlitchText(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -655,6 +989,44 @@ private fun SettingsNavigationRow(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Открыть",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SettingsActionRow(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            GlitchText(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            GlitchText(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -691,7 +1063,7 @@ private fun SettingsSectionCard(
                         )
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
+                GlitchText(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,

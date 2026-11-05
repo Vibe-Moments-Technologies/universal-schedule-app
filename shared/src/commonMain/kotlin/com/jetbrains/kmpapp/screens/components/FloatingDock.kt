@@ -19,11 +19,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.CompareArrows
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -57,23 +66,21 @@ enum class AppTab(
     val isFixed: Boolean = false
 ) {
     SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange, isFixed = true),
+    FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
+    MAP("Карта", Icons.Filled.Map, Icons.Filled.Map, isFixed = false),
+    NOTES("Конспекты", Icons.Filled.EditNote, Icons.Outlined.EditNote, isFixed = false),
+    COMPARE("Сравнение", Icons.Filled.CompareArrows, Icons.Outlined.CompareArrows, isFixed = false),
     GAMES("Игры", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports, isFixed = false),
+    // Раздел-концентратор сервисов: сам не экран приложения, а «папка» —
+    // по умолчанию скрыт, добавляется в док как обычная вкладка.
+    SERVICES("Сервисы", Icons.Filled.Apps, Icons.Outlined.Apps, isFixed = false),
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
-/**
- * Тематические иконки (эмодзи) для хэллоуинской темы: показываются в доке,
- * пока активна тема (сезон 28 октября — 3 ноября). Обычные Material-иконки
- * остаются нетронутыми вне сезона.
- */
-val AppTab.halloweenEmoji: String
-    get() = when (this) {
-        AppTab.SCHEDULE -> "\uD83C\uDF83"   // 🎃 тыква
-        AppTab.TASKS -> "\u26B0\uFE0F"      // ⚰️ гроб (дедлайны)
-        AppTab.GAMES -> "\uD83D\uDC7B"      // 👻 призрак
-        AppTab.OTHER -> "\uD83D\uDC80"      // 💀 череп
-    }
+/** Сервисные вкладки, открываемые внутри раздела «Сервисы» / блока в «Другом». */
+val AppTab.isService: Boolean
+    get() = !isFixed && this != AppTab.SERVICES
 
 @Composable
 fun FloatingDock(

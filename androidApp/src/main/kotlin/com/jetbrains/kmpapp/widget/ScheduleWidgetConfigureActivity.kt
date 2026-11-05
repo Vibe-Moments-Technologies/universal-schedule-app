@@ -196,6 +196,6 @@ class ScheduleWidgetConfigureActivity : Activity() {
     private companion object {
         /** Соглашение об id опции «По умолчанию»: реальных id < 0 не бывает. */
         const val DEFAULT_TARGET_ID = -1
-        const val DEFAULT_TARGET_LABEL = "По умолчанию · активный семестр"
+        const val DEFAULT_TARGET_LABEL = "По умолчанию · расписание уведомлений"
     }
 }

@@ -1,4 +1,5 @@
 package com.jetbrains.kmpapp.screens.tasks
+import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -101,8 +102,6 @@ import com.jetbrains.kmpapp.data.model.TaskCategory
 import com.jetbrains.kmpapp.data.model.TaskPriority
 import com.jetbrains.kmpapp.data.model.TaskStatus
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
-import com.jetbrains.kmpapp.data.analytics.AnalyticsEvents
-import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.screens.components.LayeredNavHost
 import kotlinx.coroutines.launch
 
@@ -156,7 +155,6 @@ fun TasksScreen(
                 overallProgress = overallProgress,
                 onSelectSubject = {
                     selectedSubjectId = it
-                    AppAnalytics.logEvent(AnalyticsEvents.NAV_SCREEN_VIEW, mapOf("screen" to "task_subject_detail"))
                 },
                 onCreateSubject = { showCreateSubjectSheet = true }
             )
@@ -259,8 +257,8 @@ fun TasksScreen(
         val task = taskToDelete!!
         AlertDialog(
             onDismissRequest = { taskToDelete = null },
-            title = { Text("Удалить задание?") },
-            text = { Text("Вы уверены, что хотите удалить «${task.title}»?") },
+            title = { GlitchText("Удалить задание?") },
+            text = { GlitchText("Вы уверены, что хотите удалить «${task.title}»?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -268,12 +266,12 @@ fun TasksScreen(
                         taskToDelete = null
                     }
                 ) {
-                    Text("Удалить", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    GlitchText("Удалить", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { taskToDelete = null }) {
-                    Text("Отмена")
+                    GlitchText("Отмена")
                 }
             }
         )
@@ -284,8 +282,8 @@ fun TasksScreen(
         val subject = subjectToDelete!!
         AlertDialog(
             onDismissRequest = { subjectToDelete = null },
-            title = { Text("Удалить предмет «${subject.name}»?") },
-            text = { Text("Все связанные с ним задачи и подзадачи будут также безвозвратно удалены.") },
+            title = { GlitchText("Удалить предмет «${subject.name}»?") },
+            text = { GlitchText("Все связанные с ним задачи и подзадачи будут также безвозвратно удалены.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -296,12 +294,12 @@ fun TasksScreen(
                         subjectToDelete = null
                     }
                 ) {
-                    Text("Удалить предмет", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    GlitchText("Удалить предмет", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { subjectToDelete = null }) {
-                    Text("Отмена")
+                    GlitchText("Отмена")
                 }
             }
         )
@@ -334,13 +332,13 @@ private fun TasksMainContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(
+                        GlitchText(
                             text = "Задачи",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
+                        GlitchText(
                             text = "Активных: $activeCount • Завершено: $completedCount",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -352,7 +350,7 @@ private fun TasksMainContent(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
-                        Text(
+                        GlitchText(
                             text = "$overallProgress%",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
@@ -391,7 +389,7 @@ private fun TasksMainContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                GlitchText(
                     text = "ПРЕДМЕТЫ И ПРАКТИКИ",
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,
@@ -405,7 +403,7 @@ private fun TasksMainContent(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Предмет", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    GlitchText("Предмет", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
@@ -428,13 +426,13 @@ private fun TasksMainContent(
                             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                         )
                         Spacer(modifier = Modifier.height(14.dp))
-                        Text(
+                        GlitchText(
                             text = "Предметов пока нет",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(
+                        GlitchText(
                             text = "Создайте свой первый предмет, чтобы добавлять в него лабораторные работы, практики и чеклисты сдачи",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -447,7 +445,7 @@ private fun TasksMainContent(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Создать предмет", fontWeight = FontWeight.Bold)
+                            GlitchText("Создать предмет", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -520,7 +518,7 @@ private fun SubjectCompactCard(
                         .border(0.8.dp, subjectColor.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text(
+                    GlitchText(
                         text = subject.shortCode,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.Black,
@@ -531,14 +529,14 @@ private fun SubjectCompactCard(
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    GlitchText(
                         text = subject.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )
-                    Text(
+                    GlitchText(
                         text = subject.assessmentType.displayName,
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -560,7 +558,7 @@ private fun SubjectCompactCard(
                                 .background(importanceColor)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(
+                        GlitchText(
                             text = subject.importance.displayName,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -603,13 +601,13 @@ private fun SubjectCompactCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                GlitchText(
                     text = "Задач: $completedCount из ${tasks.size}",
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
+                GlitchText(
                     text = "Завершено $progressPercent%",
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Bold,

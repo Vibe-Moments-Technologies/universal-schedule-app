@@ -12,7 +12,7 @@ import com.jetbrains.kmpapp.data.widget.WidgetBridge
  * приложения: его читает и приложение, и процесс виджета.
  */
 object ScheduleWidgetStore {
-    private const val PREFS = "uschedule_widget"
+    private const val PREFS = "krasava_widget"
     private const val KEY_PAYLOAD = "widget_payload"
     private const val KEY_THEME = "widget_theme"
 
