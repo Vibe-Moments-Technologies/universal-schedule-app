@@ -80,7 +80,6 @@ fun ScheduleScreen(
         screenContent = { detailLesson, back ->
             LessonDetailScreen(
                 lesson = detailLesson as Lesson,
-                targetId = viewModel.selectedTargetId,
                 onBack = back
             )
         },
@@ -259,7 +258,6 @@ private fun ScheduleMainContent(
                             showEmptyLessonProgress = showEmptyLessonProgress,
                             showBreakProgress = showBreakProgress,
                             showAbbreviatedNames = showAbbreviatedNames,
-                            noteTargetId = com.jetbrains.kmpapp.data.model.SemesterConfig.TARGET_ID,
                             autoScrollToCurrentLesson = autoScrollToCurrentLesson,
                             canAutoScroll = { viewModel.canAutoScroll(it) },
                             markAutoScrolled = { viewModel.markAutoScrolled(it) },

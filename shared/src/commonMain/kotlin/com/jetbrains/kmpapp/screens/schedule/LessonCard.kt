@@ -20,7 +20,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
@@ -49,9 +48,7 @@ import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
 import com.jetbrains.kmpapp.data.model.defaultLessonColor
-import com.jetbrains.kmpapp.data.storage.LessonNotesStorage
 import com.jetbrains.kmpapp.theme.LocalLessonTypeOverrides
-import org.koin.compose.koinInject
 
 @Composable
 fun ScheduleSlotCard(
@@ -63,7 +60,6 @@ fun ScheduleSlotCard(
     showEmptyLessonProgress: Boolean = true,
     showBreakProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    noteTargetId: Int = -1,
     modifier: Modifier = Modifier
 ) {
     when (slot) {
@@ -76,7 +72,6 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
-                    noteTargetId = noteTargetId,
                     modifier = modifier
                 )
             } else {
@@ -90,7 +85,6 @@ fun ScheduleSlotCard(
                     currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
-                    noteTargetId = noteTargetId,
                     modifier = modifier
                 )
             }
@@ -117,24 +111,12 @@ fun LessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    noteTargetId: Int = -1,
     modifier: Modifier = Modifier,
     pageIndicator: Pair<Int, Int>? = null,
     horizontalMargin: androidx.compose.ui.unit.Dp = 16.dp
 ) {
     val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
-    // Заметка к паре (R2): реактивное чтение — превью появляется сразу после
-    // сохранения (StateFlow), а ключ точный по targetId+дата+пара: заметки
-    // чужих расписаний в карточку не попадают.
-    val notesStorage: LessonNotesStorage = koinInject()
-    val allNotes by notesStorage.notes.collectAsState()
-    val notePreview = if (noteTargetId >= 0) {
-        val noteKey = notesStorage.lessonKey(noteTargetId, lesson.date.toString(), lesson.bellNumber)
-        allNotes.firstOrNull { it.noteKey == noteKey }?.text
-    } else {
-        null
-    }
 
     // ponytail: State протягивается вниз и читается ТОЛЬКО на сегодняшних
     // карточках: тик раз в 30 секунд пересобирает одну активную карточку,
@@ -295,34 +277,6 @@ fun LessonCard(
                     }
                 }
 
-                // Заметка к паре (R2): ≤2 строк с … на переполнении
-                if (!notePreview.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.EditNote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        GlitchText(
-                            text = notePreview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
 
                 pageIndicator?.let { (total, current) ->
                     Row(
@@ -386,7 +340,6 @@ fun MultiLessonCard(
     currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
-    noteTargetId: Int = -1,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { lessons.size })
@@ -406,7 +359,6 @@ fun MultiLessonCard(
             currentMinutesState = currentMinutesState,
             showLessonProgress = showLessonProgress,
             showAbbreviatedNames = showAbbreviatedNames,
-            noteTargetId = noteTargetId,
             pageIndicator = lessons.size to pagerState.currentPage,
             horizontalMargin = 0.dp
         )

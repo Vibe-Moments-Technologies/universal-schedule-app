@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
@@ -65,11 +64,6 @@ fun DataAndCacheScreen(
     PlatformBackHandler(onBack = onBack)
 
     val storageStats by viewModel.storageStats.collectAsState()
-    val notesStorage: com.jetbrains.kmpapp.data.storage.LessonNotesStorage =
-        org.koin.compose.koinInject()
-    val notes by notesStorage.notes.collectAsState()
-    val notesCount = notes.size
-    val notesSizeBytes = notesStorage.getStorageSizeBytes()
 
     LaunchedEffect(Unit) {
         viewModel.refreshStorageStats()
@@ -217,22 +211,6 @@ fun DataAndCacheScreen(
                         size = storageStats.formatBytes(storageStats.schedulesSizeBytes)
                     )
 
-                    androidx.compose.material3.HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
-
-                    StorageDetailRow(
-                        icon = Icons.Default.EditNote,
-                        title = "Заметки к парам",
-                        subtitle = "${notesCount} заметок",
-                        size = notesStorage.formatBytes(notesSizeBytes)
-                    )
-
-                    androidx.compose.material3.HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
 
                     StorageDetailRow(
                         icon = Icons.Default.TaskAlt,
@@ -243,37 +221,6 @@ fun DataAndCacheScreen(
                 }
             }
 
-            // Очистка старых заметок к прошедшим парам
-            if (notesCount > 0) {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        GlitchText(
-                            text = "Заметки к прошедшим парам",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        GlitchText(
-                            text = "Заметки, привязанные к занятиям старше 90 дней, можно удалить для экономии места.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = {
-                                val cutoff = kotlin.time.Clock.System.now().toEpochMilliseconds() - 90L * 24 * 60 * 60 * 1000
-                                notesStorage.cleanOldLessonNotes(cutoff)
-                            }
-                        ) {
-                            GlitchText("Очистить заметки к прошедшим занятиям")
-                        }
-                    }
-                }
-            }
 
             // Offline-First Explanation Card
             Card(
@@ -311,7 +258,7 @@ fun DataAndCacheScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                         GlitchText(
-                            text = "Приложение полностью локальное: расписание хранится как один компактный файл семестра, задачи и заметки — на устройстве.\n\n" +
+                            text = "Приложение полностью локальное: расписание хранится как один компактный файл семестра, задачи и конспекты — на устройстве.\n\n" +
                                    "Сетевого кэша нет вообще: приложение не загружает расписание из интернета. Удалять нечего — данные живут, пока вы их не удалите сами.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
