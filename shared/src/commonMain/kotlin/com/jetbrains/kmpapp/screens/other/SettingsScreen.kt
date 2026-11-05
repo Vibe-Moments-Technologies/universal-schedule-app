@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Widget
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -461,7 +461,7 @@ fun SettingsScreen(
             if (com.jetbrains.kmpapp.data.widget.isScheduleWidgetPinningSupported()) {
                 SettingsSectionCard(
                     title = "Виджет расписания",
-                    icon = Icons.Default.Widget
+                    icon = Icons.Default.Widgets
                 ) {
                     Column {
                         Text(
