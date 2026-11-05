@@ -70,3 +70,5 @@ images/
 
 # Release signing (never commit)
 release-keys/
+
+.acl-recovery/
