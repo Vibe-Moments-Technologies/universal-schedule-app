@@ -19,10 +19,10 @@
       "name": "Расписание (Dev)",
       "bundleIdentifier": "ru.vibemoments.universalschedule",
       "developerName": "Vibe Moments Technologies",
-      "localizedDescription": "Универсальное расписание: семестр собирается в конфигураторе, всё хранится на устройстве. Задачи, игры, виджеты.\n\nКанал: preview\nСборка: 26.5.0-dev.7\nОбновлено: 2026-11-06 19:04 UTC",
+      "localizedDescription": "Универсальное расписание: семестр собирается в конфигураторе, всё хранится на устройстве. Задачи, игры, виджеты.\n\nКанал: preview\nСборка: 26.1.0-dev.3\nОбновлено: 2026-11-06 20:40 UTC",
       "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/universal-schedule-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
-      "version": "26.5.0-dev.7",
-      "versionDate": "2026-11-06T19:04:51.544055+00:00",
+      "version": "26.1.0-dev.3",
+      "versionDate": "2026-11-06T20:40:50.820693+00:00",
       "downloadURL": "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases/download/preview/UniversalSchedule-preview.ipa",
       "tintColor": "4F46E5",
       "channel": "preview"
