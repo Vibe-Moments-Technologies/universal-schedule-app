@@ -76,6 +76,8 @@ fun LessonDetailScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val taskRepository: TaskRepository = koinInject()
+    val subjects by taskRepository.subjects.collectAsState()
+    val isAlreadyAdded = subjects.any { it.name.trim().equals(lesson.subject.trim(), ignoreCase = true) }
 
     val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
