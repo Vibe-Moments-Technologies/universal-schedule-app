@@ -26,20 +26,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 APP_VERSION_FILE = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
-BUNDLE_ID = "ru.vibemoments.krasava"
+BUNDLE_ID = "ru.vibemoments.universalschedule"
 DEVELOPER_NAME = "Vibe Moments Technologies"
 TINT_COLOR = "4F46E5"
 APP_DESCRIPTION = (
-    "Расписание пар, поиск свободных аудиторий, интерактивные карты "
-    "корпусов, задачи и офлайн-кеш."
+    "Универсальное расписание: семестр собирается в конфигураторе, всё хранится на устройстве. Задачи, игры, виджеты."
 )
 
 # Канал → имя записи в источнике (по нему запись заменяется при обновлении).
 CHANNEL_APP_NAMES = {
-    "stable": "Красава!",
-    "beta": "Красава! (Beta)",
-    "rc": "Красава! (RC)",
-    "preview": "Красава! (Dev)",
+    "stable": "Расписание",
+    "beta": "Расписание (Beta)",
+    "rc": "Расписание (RC)",
+    "preview": "Расписание (Dev)",
 }
 # Порядок каналов в списке источника.
 CHANNEL_ORDER = ["stable", "rc", "beta", "preview"]
@@ -48,7 +47,7 @@ CHANNEL_ORDER = ["stable", "rc", "beta", "preview"]
 def parse_app_version(path):
     content = Path(path).read_text(encoding="utf-8")
     m = re.search(r'const\s+val\s+GITHUB_REPO\s*=\s*"([^"]+)"', content)
-    repo = m.group(1) if m else "Vibe-Moments-Technologies/krasava-app"
+    repo = m.group(1) if m else "Vibe-Moments-Technologies/universal-schedule-app"
     m = (re.search(r'const\s+val\s+CHANGELOG\s*=\s*"""([\s\S]*?)"""', content)
          or re.search(r'const\s+val\s+CHANGELOG\s*=\s*"([^"]*)"', content))
     changelog = m.group(1).strip() if m else ""
@@ -64,23 +63,23 @@ def asset_urls(repo, channel, version):
         base = f"https://github.com/{repo}/releases"
         return {
             "download_url": f"{base}/latest",
-            "apk_url": f"{base}/latest/download/Krasava.apk",
-            "ipa_url": f"{base}/latest/download/Krasava.ipa",
+            "apk_url": f"{base}/latest/download/UniversalSchedule.apk",
+            "ipa_url": f"{base}/latest/download/UniversalSchedule.ipa",
         }
     if channel in ("beta", "rc"):
         base = f"https://github.com/{repo}/releases/download/v{version}"
         return {
             # Страница релиза, а не папка download/ (она отдаёт 404)
             "download_url": f"https://github.com/{repo}/releases/tag/v{version}",
-            "apk_url": f"{base}/Krasava-v{version}.apk",
-            "ipa_url": f"{base}/Krasava-v{version}.ipa",
+            "apk_url": f"{base}/UniversalSchedule-v{version}.apk",
+            "ipa_url": f"{base}/UniversalSchedule-v{version}.ipa",
         }
     # preview (rolling dev)
     base = f"https://github.com/{repo}/releases/download/preview"
     return {
-        "download_url": f"{base}/Krasava-preview.apk",
-        "apk_url": f"{base}/Krasava-preview.apk",
-        "ipa_url": f"{base}/Krasava-preview.ipa",
+        "download_url": f"{base}/UniversalSchedule-preview.apk",
+        "apk_url": f"{base}/UniversalSchedule-preview.apk",
+        "ipa_url": f"{base}/UniversalSchedule-preview.ipa",
     }
 
 
@@ -143,8 +142,8 @@ def build_source(repo, channel, version, ipa_url):
     apps.sort(key=lambda a: CHANNEL_ORDER.index(a.get("channel"))
               if a.get("channel") in CHANNEL_ORDER else len(CHANNEL_ORDER))
     return {
-        "name": "Красава!",
-        "identifier": "krasava-unified",
+        "name": "Расписание",
+        "identifier": "uschedule-unified",
         "sourceURL": f"https://raw.githubusercontent.com/{repo}/gh-pages/apps.json",
         "apps": apps,
     }

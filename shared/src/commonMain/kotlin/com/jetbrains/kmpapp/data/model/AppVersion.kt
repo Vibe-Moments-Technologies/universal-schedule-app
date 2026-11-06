@@ -8,8 +8,7 @@ object AppVersion {
      *  - тег v26.0.0-beta.3 / -rc.1  → beta / rc (prerelease)
      *  - push в main                 → 26.X-dev.N (rolling preview)
      *  - contributor build           → 26.X-contrib.N
-     * База перезаписана с актуального krasava-app; линия universal-schedule
-     * продолжается с 26.5.0.
+     * База перезаписана; линия разработки продолжается с 26.5.0.
      */
     const val RELEASE_VERSION = "26.5.0"
     const val VERSION_NAME = RELEASE_VERSION
@@ -40,7 +39,7 @@ object AppVersion {
 
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "Перезапуск на новой базе: интерфейс и движок актуального krasava-app — новый дизайн расписания, виджеты, игры, темы, сравнение расписаний. Расписание теперь собирается вручную в конфигураторе семестра (без привязки к серверам университета) — работа над этим продолжается."
+    const val CHANGELOG = "Перезапуск на новой базе: универсальное расписание без привязки к вузу. Конфигуратор семестра — вуз, группа, звонки и недельный шаблон занятий; всё хранится на устройстве. Виджеты, игры, темы и задачи сохранены."
 
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
     const val GITHUB_REPO = "Vibe-Moments-Technologies/universal-schedule-app"

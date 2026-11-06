@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -24,7 +24,7 @@
         android:name=".ScheduleApp"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Krasava">
+        android:theme="@style/Theme.Raspisanie">
 
         <!-- Одна иконка, без алиасов и автоадаптации: набор смены иконки
              по теме оказался хрупким (краш на старте, пропажа иконки),

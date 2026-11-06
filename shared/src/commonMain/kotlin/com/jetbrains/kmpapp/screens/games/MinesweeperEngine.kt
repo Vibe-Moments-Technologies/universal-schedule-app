@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.screens.games
+﻿package com.jetbrains.kmpapp.screens.games
 
 import kotlin.random.Random
 
@@ -21,7 +21,7 @@ enum class MinesweeperDifficulty(
     SPECIALIST("Для специалистов (с этим уже можно играть)", 30, 16, 99),
     MASTER("Магистр (Уважаем)", 25, 25, 100),
     POSTGRAD("Аспирант (Ты достиг высокого духовного уровня)", 50, 50, 250),
-    RETIREE("Для пенсионеров (Красава... Ты с ума сошел?)", 64, 48, 777)
+    RETIREE("Для пенсионеров (Ты с ума сошёл?)", 64, 48, 777)
 }
 
 /** Состояние партии. READY — мины ещё не расставлены, первый ход впереди. */

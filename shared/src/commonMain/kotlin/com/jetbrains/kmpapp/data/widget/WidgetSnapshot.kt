@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.data.widget
+﻿package com.jetbrains.kmpapp.data.widget
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.Lesson
@@ -21,7 +21,7 @@ import kotlinx.serialization.json.Json
  *
  * Универсальное приложение: расписание одно (локальный семестр), поэтому и
  * цель в снапшоте одна — [SemesterConfig.TARGET_ID]. Структура с массивом
- * targets сохранена дословно из контракта krasava, чтобы iOS-виджет
+ * targets сохранена дословно из контракта предыдущей версии, чтобы iOS-виджет
  * (Swift-зеркало движка) и Android Glance читали одинаковый JSON без
  * ветвлений: количество целей — деталь этого приложения, а не формата.
  */

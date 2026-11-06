@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.data.storage
+﻿package com.jetbrains.kmpapp.data.storage
 
 import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
@@ -985,44 +985,44 @@ class ScheduleStorage(
 
     companion object {
         private const val KEY_SEMESTER_CONFIG = "uschedule_semester_config"
-        private const val KEY_SHOW_EMPTY_LESSONS = "krasava_show_empty_lessons"
-        private const val KEY_SHOW_LESSON_PROGRESS = "krasava_show_lesson_progress"
-        private const val KEY_SHOW_EMPTY_LESSON_PROGRESS = "krasava_show_empty_lesson_progress"
-        private const val KEY_SHOW_BREAK_PROGRESS = "krasava_show_break_progress"
-        private const val KEY_CALENDAR_COLLAPSED = "krasava_calendar_collapsed"
-        private const val KEY_CALENDAR_SWIPE_COLLAPSE = "krasava_calendar_swipe_collapse"
+        private const val KEY_SHOW_EMPTY_LESSONS = "uschedule_show_empty_lessons"
+        private const val KEY_SHOW_LESSON_PROGRESS = "uschedule_show_lesson_progress"
+        private const val KEY_SHOW_EMPTY_LESSON_PROGRESS = "uschedule_show_empty_lesson_progress"
+        private const val KEY_SHOW_BREAK_PROGRESS = "uschedule_show_break_progress"
+        private const val KEY_CALENDAR_COLLAPSED = "uschedule_calendar_collapsed"
+        private const val KEY_CALENDAR_SWIPE_COLLAPSE = "uschedule_calendar_swipe_collapse"
         // Ступень раскрытия ленты: WEEK | TWO_WEEKS | MONTH (issue #3).
-        private const val KEY_CALENDAR_EXPAND_STATE = "krasava_calendar_expand_state"
-        private const val KEY_HIDE_ADDITIONAL_LESSONS = "krasava_hide_additional_lessons"
-        private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "krasava_auto_scroll_current_lesson"
-        private const val KEY_SHOW_ABBREVIATED_NAMES = "krasava_show_abbreviated_names"
-        private const val KEY_APP_THEME = "krasava_app_theme"
-        private const val KEY_DOCK_TABS = "krasava_dock_tabs_order"
-        private const val KEY_DOCK_HIDDEN = "krasava_dock_hidden"
-        private const val KEY_SAKURA_THEME = "krasava_sakura_theme_secret"
-        private const val KEY_KAWAII_THEME = "krasava_kawaii_theme_secret"
-        private const val KEY_CYBERPUNK_THEME = "krasava_cyberpunk_theme_secret"
-        private const val KEY_MATRIX_THEME = "krasava_matrix_theme_secret"
-        private const val KEY_HALLOWEEN_THEME = "krasava_halloween_theme_secret"
-        private const val KEY_HALLOWEEN_DISMISSED_YEAR = "krasava_halloween_dismissed_year"
-        private const val KEY_THEME_OVERLAY = "krasava_theme_overlay"
+        private const val KEY_CALENDAR_EXPAND_STATE = "uschedule_calendar_expand_state"
+        private const val KEY_HIDE_ADDITIONAL_LESSONS = "uschedule_hide_additional_lessons"
+        private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "uschedule_auto_scroll_current_lesson"
+        private const val KEY_SHOW_ABBREVIATED_NAMES = "uschedule_show_abbreviated_names"
+        private const val KEY_APP_THEME = "uschedule_app_theme"
+        private const val KEY_DOCK_TABS = "uschedule_dock_tabs_order"
+        private const val KEY_DOCK_HIDDEN = "uschedule_dock_hidden"
+        private const val KEY_SAKURA_THEME = "uschedule_sakura_theme_secret"
+        private const val KEY_KAWAII_THEME = "uschedule_kawaii_theme_secret"
+        private const val KEY_CYBERPUNK_THEME = "uschedule_cyberpunk_theme_secret"
+        private const val KEY_MATRIX_THEME = "uschedule_matrix_theme_secret"
+        private const val KEY_HALLOWEEN_THEME = "uschedule_halloween_theme_secret"
+        private const val KEY_HALLOWEEN_DISMISSED_YEAR = "uschedule_halloween_dismissed_year"
+        private const val KEY_THEME_OVERLAY = "uschedule_theme_overlay"
         // Разблокировки квестовых тем для списка «Тематические темы».
-        private const val KEY_UNLOCKED_KAWAII = "krasava_unlocked_kawaii"
-        private const val KEY_UNLOCKED_CYBERPUNK = "krasava_unlocked_cyberpunk"
-        private const val KEY_UNLOCKED_MATRIX = "krasava_unlocked_matrix"
+        private const val KEY_UNLOCKED_KAWAII = "uschedule_unlocked_kawaii"
+        private const val KEY_UNLOCKED_CYBERPUNK = "uschedule_unlocked_cyberpunk"
+        private const val KEY_UNLOCKED_MATRIX = "uschedule_unlocked_matrix"
         // Пользовательские цвета типов занятий: "LECTURE=BLUE;LAB=ROSE".
-        private const val KEY_LESSON_TYPE_COLORS = "krasava_lesson_type_colors"
+        private const val KEY_LESSON_TYPE_COLORS = "uschedule_lesson_type_colors"
         // Вариант палитры Киберпанка: NEON (новая) | CLASSIC (старая).
-        private const val KEY_CYBERPUNK_VARIANT = "krasava_cyberpunk_variant"
-        private const val KEY_CHEATS_AGREED = "krasava_cheats_agreed"
-        private const val KEY_CHEATS_BLOCKED = "krasava_cheats_blocked"
+        private const val KEY_CYBERPUNK_VARIANT = "uschedule_cyberpunk_variant"
+        private const val KEY_CHEATS_AGREED = "uschedule_cheats_agreed"
+        private const val KEY_CHEATS_BLOCKED = "uschedule_cheats_blocked"
         private const val KEY_ANALYTICS_ENABLED = "uschedule_analytics_enabled"
-        private const val KEY_APP_ICON = "krasava_app_icon"
-        private const val KEY_NOTIFICATIONS_ENABLED = "krasava_notifications_enabled"
-        private const val KEY_VPN_WARNING_ENABLED = "krasava_vpn_warning_enabled"
-        private const val KEY_NOTIFY_MINUTES_BEFORE = "krasava_notify_minutes_before"
-        private const val KEY_ASK_BEFORE_NOTE_DELETE = "krasava_ask_before_note_delete"
-        private const val KEY_NOTES = "krasava_notes_pages"
+        private const val KEY_APP_ICON = "uschedule_app_icon"
+        private const val KEY_NOTIFICATIONS_ENABLED = "uschedule_notifications_enabled"
+        private const val KEY_VPN_WARNING_ENABLED = "uschedule_vpn_warning_enabled"
+        private const val KEY_NOTIFY_MINUTES_BEFORE = "uschedule_notify_minutes_before"
+        private const val KEY_ASK_BEFORE_NOTE_DELETE = "uschedule_ask_before_note_delete"
+        private const val KEY_NOTES = "uschedule_notes_pages"
         // Дефолт дока для НОВЫХ установок (решение владельца): Существующие
         // пользователи не затрагиваются — их сохранённый док доверяется.
         val DEFAULT_DOCK_TABS = listOf(

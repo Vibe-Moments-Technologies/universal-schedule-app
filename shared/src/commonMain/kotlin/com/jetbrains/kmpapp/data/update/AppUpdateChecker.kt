@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.data.update
+﻿package com.jetbrains.kmpapp.data.update
 
 import com.jetbrains.kmpapp.data.model.AppVersion
 import io.ktor.client.HttpClient
@@ -93,7 +93,7 @@ class AppUpdateChecker(
     ): UpdateCheckResult? {
         return try {
             val response = client.get(feedUrl) {
-                header("User-Agent", "Krasava-App")
+                header("User-Agent", "universal-schedule-app")
                 // raw.githubusercontent отдаёт max-age=300: NSURLSession (iOS)
                 // и OkHttp-кеш могли отдавать СТАРЫЙ JSON из локального кеша
                 // до 5 минут после правки фида — «тестовый фид не работает»
@@ -138,7 +138,7 @@ class AppUpdateChecker(
     private suspend fun fetchLatestReleaseResult(): UpdateCheckResult? {
         return try {
             val response = client.get("https://api.github.com/repos/$GITHUB_REPO/releases/latest") {
-                header("User-Agent", "Krasava-App")
+                header("User-Agent", "universal-schedule-app")
             }
             if (response.status.value !in 200..299) return null
             val release = response.body<GitHubRelease>()

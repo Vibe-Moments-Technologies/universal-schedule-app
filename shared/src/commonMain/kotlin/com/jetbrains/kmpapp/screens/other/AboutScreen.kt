@@ -141,7 +141,7 @@ fun AboutScreen(
                 }
             ) {
                 GlitchText(
-                    text = "Красава!",
+                    text = "Расписание",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -157,12 +157,6 @@ fun AboutScreen(
                     fontSize = 12.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                GlitchText(
-                    text = "Наши права защищены · Не связано с РТУ МИРЭА",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                 )
             }
 
@@ -191,8 +185,8 @@ fun AboutScreen(
 /** Почта проекта: пишем письма через mailto. */
 private const val PROJECT_EMAIL = "vibe.moments.technologies@gmail.com"
 
-/** TG-бот поддержки (репорт владельца): быстрый канал вопросов. */
-private const val SUPPORT_BOT_URL = "https://t.me/krasava_sbot"
+/** TG-бот поддержки: быстрый канал вопросов. */
+private const val SUPPORT_BOT_URL = "https://t.me/l1ratch"
 
 @Composable
 private fun ContactsCard() {

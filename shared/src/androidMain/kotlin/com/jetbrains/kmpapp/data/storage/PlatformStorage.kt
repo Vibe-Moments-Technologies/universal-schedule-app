@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.data.storage
+﻿package com.jetbrains.kmpapp.data.storage
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -6,11 +6,11 @@ import java.io.File
 
 actual class PlatformStorage actual constructor() {
     private val prefs: SharedPreferences?
-        get() = AndroidContextProvider.context?.getSharedPreferences("krasava_schedule_cache", Context.MODE_PRIVATE)
+        get() = AndroidContextProvider.context?.getSharedPreferences("uschedule_schedule_cache", Context.MODE_PRIVATE)
 
     private val fallbackDir: File by lazy {
         val baseDir = AndroidContextProvider.context?.filesDir ?: File(System.getProperty("java.io.tmpdir") ?: ".")
-        File(baseDir, "krasava_cache").apply { mkdirs() }
+        File(baseDir, "uschedule_cache").apply { mkdirs() }
     }
 
     actual fun saveString(key: String, value: String) {

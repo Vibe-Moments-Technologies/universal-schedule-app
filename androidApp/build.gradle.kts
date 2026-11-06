@@ -40,7 +40,7 @@ android {
                     writeBytes(Base64.getDecoder().decode(b64))
                 }
                 storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "krasava"
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "raspisanie"
                 keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
             }
         }

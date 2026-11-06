@@ -107,7 +107,7 @@ private extension WidgetTargetEntity {
 struct KrasavaWidgetIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Расписание" }
     static var description: IntentDescription {
-        IntentDescription("Выберите группу, преподавателя или аудиторию для виджета.")
+        IntentDescription("Виджет расписания семестра.")
     }
 
     @Parameter(title: "Расписание")
@@ -152,7 +152,7 @@ struct RefreshWidgetIntent: AppIntent {
     static var isDiscoverable: Bool = false
 
     func perform() async throws -> some IntentResult {
-        WidgetCenter.shared.reloadTimelines(ofKind: "KrasavaWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "ScheduleWidget")
         return .result()
     }
 }

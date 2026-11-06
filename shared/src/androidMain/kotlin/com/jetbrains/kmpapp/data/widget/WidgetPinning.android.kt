@@ -64,7 +64,7 @@ actual fun requestScheduleWidgetPin(): Boolean {
 }
 
 /** Тот же файл prefs, что у ScheduleWidgetStore (общий контейнер). */
-internal const val WIDGET_PREFS = "krasava_widget"
+internal const val WIDGET_PREFS = "raspisanie_widget"
 internal const val KEY_PENDING_TARGET = "pending_widget_target"
 internal const val KEY_PENDING_SHORT = "pending_widget_short_names"
 

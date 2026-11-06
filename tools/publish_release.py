@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 tools/publish_release.py — публикация GitHub Release по каналу.
 
@@ -26,7 +26,7 @@ APP_VERSION_FILE = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model
 def parse_repo(app_version_file):
     content = Path(app_version_file).read_text(encoding="utf-8")
     m = re.search(r'const\s+val\s+GITHUB_REPO\s*=\s*"([^"]+)"', content)
-    return m.group(1) if m else "Vibe-Moments-Technologies/krasava-app"
+    return m.group(1) if m else "Vibe-Moments-Technologies/universal-schedule-app"
 
 
 def parse_changelog(app_version_file):
@@ -74,7 +74,7 @@ def build_preview_notes(version, build_number, commit_sha, date):
 
 def build_release_notes(version, build_number, date, repo, tag, files, changelog):
     lines = [
-        f"### 📱 Красава! v{version}",
+        f"### 📱 Расписание v{version}",
         f"**Номер сборки:** `#{build_number}` · {date}",
         ""
     ]
@@ -120,7 +120,7 @@ def publish_preview(args, files, date):
 
 def publish_immutable(args, files, date):
     tag = f"v{args.version}"
-    title = f"Красава! v{args.version} (сборка #{args.build_number})"
+    title = f"Расписание v{args.version} (сборка #{args.build_number})"
     prerelease_flag = "--prerelease" if args.channel != "stable" else "--latest"
 
     repo = parse_repo(args.app_version_file)

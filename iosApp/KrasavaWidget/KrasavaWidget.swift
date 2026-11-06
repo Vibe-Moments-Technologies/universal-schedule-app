@@ -201,7 +201,7 @@ struct LegacyScheduleWidgetProvider: TimelineProvider {
 /// result builder: `@WidgetBundleBuilder` не поддерживает ветвление по версии
 /// ОС, а показывать интерактивный и legacy-виджет одновременно нельзя.
 struct ScheduleWidget: Widget {
-    let kind = "KrasavaWidget"
+    let kind = "ScheduleWidget"
 
     var body: some WidgetConfiguration {
         configuration()
@@ -216,7 +216,7 @@ struct ScheduleWidget: Widget {
             ) { entry in
                 ScheduleWidgetEntryView(entry: entry)
             }
-            .configurationDisplayName("Красава!")
+            .configurationDisplayName("Расписание")
             .description("Ближайшие пары: аудитория, время и дисциплина")
             .supportedFamilies(Self.families)
         } else {
@@ -226,7 +226,7 @@ struct ScheduleWidget: Widget {
             ) { entry in
                 ScheduleWidgetEntryView(entry: entry)
             }
-            .configurationDisplayName("Красава!")
+            .configurationDisplayName("Расписание")
             .description("Ближайшие пары: аудитория, время и дисциплина")
             .supportedFamilies(Self.families)
         }

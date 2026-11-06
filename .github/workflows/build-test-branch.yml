@@ -1,4 +1,4 @@
-name: 🧪 Contributor Test Build (APK & IPA)
+﻿name: 🧪 Contributor Test Build (APK & IPA)
 
 # Сборка любой ветки/SHA руками: только Actions Artifacts.
 # НЕ трогает релизы, теги и gh-pages. Версия {RELEASE_VERSION}-contrib.N,

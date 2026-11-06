@@ -112,18 +112,6 @@ fun LicensesScreen(
                 )
             }
 
-            SectionCard(title = "Данные и карты") {
-                LicenseItem(
-                    title = "Данные расписания занятий",
-                    description = "Официальный Schedule API университета."
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                LicenseItem(
-                    title = "Схемы и карты корпусов",
-                    description = "Студенческие сервисы университета."
-                )
-            }
-
             // Отдельный блок внизу (решение владельца): политика нужна
             // в UI приложения — Google Play требует, чтобы она была
             // доступна из самого приложения, не только в сторе.
@@ -131,7 +119,7 @@ fun LicensesScreen(
                 LicenseItem(
                     title = "Открыть политику",
                     description = "Как приложение обрабатывает данные.",
-                    onClick = { uriHandler.openUri("https://vibe-moments-technologies.github.io/krasava-app/privacy.html") }
+                    onClick = { uriHandler.openUri("https://vibe-moments-technologies.github.io/universal-schedule-app/privacy.html") }
                 )
             }
 

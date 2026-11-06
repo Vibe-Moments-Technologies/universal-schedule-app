@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp.data.update
+﻿package com.jetbrains.kmpapp.data.update
 
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * Сброс — кнопкой в меню отладки («Отладка и эксперименты»).
  */
 object UpdateDialogPrefs {
-    private const val KEY_SUPPRESSED_VERSION = "krasava_update_dialog_suppressed_version"
+    private const val KEY_SUPPRESSED_VERSION = "uschedule_update_dialog_suppressed_version"
 
     private val storage by lazy { PlatformStorage() }
 
