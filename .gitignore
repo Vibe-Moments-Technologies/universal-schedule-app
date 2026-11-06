@@ -83,3 +83,5 @@ col_*.png
 grid.py
 pdfium_text.txt
 schedule_page1.png
+
+docs_ScheduleFormat_from_old_branch.md
