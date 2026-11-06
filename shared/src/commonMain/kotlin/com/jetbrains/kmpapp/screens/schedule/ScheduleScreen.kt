@@ -1,4 +1,6 @@
 package com.jetbrains.kmpapp.screens.schedule
+import com.jetbrains.kmpapp.screens.configurator.ConfiguratorScreen
+import com.jetbrains.kmpapp.screens.configurator.ConfiguratorViewModel
 import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,9 +67,11 @@ import kotlin.math.abs
 @Composable
 fun ScheduleScreen(
     viewModel: ScheduleViewModel,
+    configuratorViewModel: ConfiguratorViewModel,
     modifier: Modifier = Modifier,
     // Не null при скрытом доке: шестерёнка в топбаре открывает «Другое».
-    onOpenOther: (() -> Unit)? = null
+    onOpenOther: (() -> Unit)? = null,
+    onOpenConfigurator: (() -> Unit)? = null
 ) {
     val selectedLessonForDetail by viewModel.selectedLessonForDetail.collectAsState()
 
@@ -76,7 +81,12 @@ fun ScheduleScreen(
         onBackToParent = { viewModel.selectLessonForDetail(null) },
         // Возврат из другой вкладки с открытым детальным экраном — без въезда.
         initiallyRevealed = remember { selectedLessonForDetail != null },
-        rootContent = { ScheduleMainContent(viewModel = viewModel, onOpenOther = onOpenOther) },
+        rootContent = { ScheduleMainContent(
+            viewModel = viewModel,
+            configuratorViewModel = configuratorViewModel,
+            onOpenOther = onOpenOther,
+            onOpenConfigurator = onOpenConfigurator
+        ) },
         screenContent = { detailLesson, back ->
             LessonDetailScreen(
                 lesson = detailLesson as Lesson,
@@ -91,8 +101,10 @@ fun ScheduleScreen(
 @Composable
 private fun ScheduleMainContent(
     viewModel: ScheduleViewModel,
+    configuratorViewModel: ConfiguratorViewModel,
     modifier: Modifier = Modifier,
-    onOpenOther: (() -> Unit)? = null
+    onOpenOther: (() -> Unit)? = null,
+    onOpenConfigurator: (() -> Unit)? = null
 ) {
     val semester by viewModel.semester.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
@@ -197,6 +209,18 @@ private fun ScheduleMainContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        androidx.compose.material3.Button(
+                            onClick = { onOpenConfigurator?.invoke() },
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        ) {
+                            androidx.compose.material3.Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Открыть конфигуратор")
+                        }
                     }
                 }
             } else {

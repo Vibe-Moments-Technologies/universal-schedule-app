@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 enum class OtherSubScreen(val depth: Int) {
     ROOT(0),
     MANAGE_SCHEDULES(1),
+    CONFIGURATOR(1),
     SETTINGS(1),
     DATA_AND_CACHE(2),
     DOCK_SETTINGS(2),

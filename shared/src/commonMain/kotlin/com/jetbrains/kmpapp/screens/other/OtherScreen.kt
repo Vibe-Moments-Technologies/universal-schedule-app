@@ -1,5 +1,7 @@
 package com.jetbrains.kmpapp.screens.other
 import com.jetbrains.kmpapp.theme.GlitchText
+import com.jetbrains.kmpapp.screens.configurator.ConfiguratorScreen
+import com.jetbrains.kmpapp.screens.configurator.ConfiguratorViewModel
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +64,7 @@ import com.jetbrains.kmpapp.screens.games.GamesViewModel
 @Composable
 fun OtherScreen(
     viewModel: OtherViewModel,
+    configuratorViewModel: ConfiguratorViewModel,
     tasksViewModel: com.jetbrains.kmpapp.screens.tasks.TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
     notesViewModel: com.jetbrains.kmpapp.screens.notes.NotesViewModel = org.koin.compose.viewmodel.koinViewModel(),
     gamesViewModel: GamesViewModel = org.koin.compose.viewmodel.koinViewModel(),
@@ -95,6 +98,7 @@ fun OtherScreen(
                 viewModel = viewModel,
                 onNavigate = { viewModel.navigateToSubScreen(it) },
                 onNavigateToTab = onNavigateToTab,
+                onNavigateConfigurator = { viewModel.navigateToSubScreen(OtherSubScreen.CONFIGURATOR) },
                 onBack = onBack
             )
         },
@@ -103,6 +107,9 @@ fun OtherScreen(
                 OtherSubScreen.ROOT -> {}
                 OtherSubScreen.MANAGE_SCHEDULES -> {
                     ManageSchedulesScreen(viewModel = viewModel, onBack = back)
+                }
+                OtherSubScreen.CONFIGURATOR -> {
+                    ConfiguratorScreen(viewModel = configuratorViewModel, onBack = back)
                 }
                 OtherSubScreen.SETTINGS -> {
                     SettingsScreen(
@@ -205,6 +212,7 @@ private fun OtherMainContent(
     viewModel: OtherViewModel,
     onNavigate: (OtherSubScreen) -> Unit,
     onNavigateToTab: (AppTab) -> Unit,
+    onNavigateConfigurator: () -> Unit,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -312,6 +320,14 @@ private fun OtherMainContent(
                 } ?: "Семестр не собран",
                 icon = Icons.AutoMirrored.Filled.EventNote,
                 onClick = { onNavigate(OtherSubScreen.MANAGE_SCHEDULES) }
+            )
+
+            // 1.5. Конфигуратор семестра (создание/редактирование)
+            OtherNavCard(
+                title = "Конфигуратор",
+                subtitle = "Соберите семестр: вуз, группа, звонки, занятия",
+                icon = Icons.Default.Tune,
+                onClick = { onNavigate(OtherSubScreen.CONFIGURATOR) }
             )
 
             // 2. Settings card
