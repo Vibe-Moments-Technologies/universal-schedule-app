@@ -1,11 +1,11 @@
 {
-  "name": "Красава!",
-  "identifier": "krasava-unified",
+  "name": "Расписание",
+  "identifier": "uschedule-unified",
   "sourceURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/universal-schedule-app/gh-pages/apps.json",
   "apps": [
     {
       "name": "Расписание",
-      "bundleIdentifier": "ru.vibemoments.krasava",
+      "bundleIdentifier": "ru.vibemoments.universalschedule",
       "developerName": "Vibe Moments Technologies",
       "localizedDescription": "Универсальное офлайн-расписание: локальный конфигуратор семестра для любого учебного заведения, напоминания и задачи.\n\nКанал: stable\nСборка: 26.0.0\nОбновлено: 2026-09-24 16:51 UTC",
       "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/universal-schedule-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
@@ -16,14 +16,14 @@
       "channel": "stable"
     },
     {
-      "name": "Красава! (Dev)",
-      "bundleIdentifier": "ru.vibemoments.krasava",
+      "name": "Расписание (Dev)",
+      "bundleIdentifier": "ru.vibemoments.universalschedule",
       "developerName": "Vibe Moments Technologies",
-      "localizedDescription": "Расписание пар, поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nКанал: preview\nСборка: 26.5.0-dev.6\nОбновлено: 2026-11-06 18:15 UTC",
+      "localizedDescription": "Универсальное расписание: семестр собирается в конфигураторе, всё хранится на устройстве. Задачи, игры, виджеты.\n\nКанал: preview\nСборка: 26.5.0-dev.7\nОбновлено: 2026-11-06 19:04 UTC",
       "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/universal-schedule-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
-      "version": "26.5.0-dev.6",
-      "versionDate": "2026-11-06T18:15:43.149547+00:00",
-      "downloadURL": "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases/download/preview/Krasava-preview.ipa",
+      "version": "26.5.0-dev.7",
+      "versionDate": "2026-11-06T19:04:51.544055+00:00",
+      "downloadURL": "https://github.com/Vibe-Moments-Technologies/universal-schedule-app/releases/download/preview/UniversalSchedule-preview.ipa",
       "tintColor": "4F46E5",
       "channel": "preview"
     }
