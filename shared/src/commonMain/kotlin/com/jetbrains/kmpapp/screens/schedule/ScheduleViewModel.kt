@@ -37,7 +37,6 @@ class ScheduleViewModel(
     val calendarExpandState: StateFlow<CalendarExpandState> = repository.calendarExpandState
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
-    val vpnWarningEnabled: StateFlow<Boolean> = repository.vpnWarningEnabled
 
     private var lastAutoScrolledDate: LocalDate? = null
 

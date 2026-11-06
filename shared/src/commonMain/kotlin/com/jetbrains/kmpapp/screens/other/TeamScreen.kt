@@ -161,6 +161,14 @@ private fun TeamMemberCard(member: TeamMember) {
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
+                    member.description?.let { text ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        GlitchText(
+                            text = text,
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     member.email?.let { email ->
                         Spacer(modifier = Modifier.height(3.dp))
                         // Контактный e-mail: тап открывает почтовый клиент (mailto).

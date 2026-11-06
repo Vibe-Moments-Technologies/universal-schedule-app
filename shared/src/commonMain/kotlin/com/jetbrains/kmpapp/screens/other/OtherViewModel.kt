@@ -40,8 +40,6 @@ enum class OtherSubScreen(val depth: Int) {
     SCHEDULE_CALENDAR(2),
     // Тематические темы: найденные квестами надстройки тем
     THEMED_THEMES(2),
-    // Пользовательские цвета типов занятий
-    LESSON_COLORS(2),
     // Параметры сервисов
     SERVICE_NOTES_SETTINGS(2),
     // Настройки игр: «Сапер» и «Тетрис»
@@ -70,7 +68,6 @@ private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.SCHEDULE_PROGRESS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_CALENDAR to OtherSubScreen.SETTINGS,
     OtherSubScreen.THEMED_THEMES to OtherSubScreen.SETTINGS,
-    OtherSubScreen.LESSON_COLORS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SERVICE_NOTES_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SAPER_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.TETRIS_SETTINGS to OtherSubScreen.SETTINGS,
@@ -116,7 +113,6 @@ class OtherViewModel(
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
     val calendarSwipeCollapse: StateFlow<Boolean> = repository.calendarSwipeCollapse
-    val hideAdditionalLessons: StateFlow<Boolean> = repository.hideAdditionalLessons
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
@@ -136,8 +132,6 @@ class OtherViewModel(
     val isHalloweenRowVisible: StateFlow<Boolean> = repository.isHalloweenRowVisible
     /** Темы, найденные квестами: только они плюс Сакура видны в списке. */
     val unlockedThemes: StateFlow<Set<ThemeOverlay>> = repository.unlockedThemes
-    /** Пользовательские цвета типов занятий (только переопределённые). */
-    val lessonTypeColors: StateFlow<Map<LessonType, LessonColor>> = repository.lessonTypeColors
 
     /**
      * Типы занятий, реально присутствующие в семестре.
@@ -155,7 +149,6 @@ class OtherViewModel(
     val cyberpunkVariant: StateFlow<CyberpunkVariant> = repository.cyberpunkVariant
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
-    val analyticsEnabled: StateFlow<Boolean> = repository.analyticsEnabled
 
     // Скролл подэкранов «Другое» живёт в VM: LayeredNavHost пересоздаёт экран
     // в другом слое при переходе родитель↔дочка, remember-состояния гибнут.
@@ -168,7 +161,6 @@ class OtherViewModel(
     val appIcon: StateFlow<String> = repository.appIcon
     val notificationsEnabled: StateFlow<Boolean> = repository.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = repository.notifyMinutesBefore
-    val vpnWarningEnabled: StateFlow<Boolean> = repository.vpnWarningEnabled
     val askBeforeNoteDelete: StateFlow<Boolean> = repository.askBeforeNoteDelete
 
     fun setShowLessonProgress(enabled: Boolean) {
@@ -185,10 +177,6 @@ class OtherViewModel(
 
     fun setCalendarSwipeCollapse(enabled: Boolean) {
         repository.setCalendarSwipeCollapse(enabled)
-    }
-
-    fun setHideAdditionalLessons(enabled: Boolean) {
-        repository.setHideAdditionalLessons(enabled)
     }
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {
@@ -214,20 +202,15 @@ class OtherViewModel(
     fun setMatrixTheme(enabled: Boolean) = repository.setMatrixTheme(enabled)
     fun setHalloweenTheme(enabled: Boolean) = repository.setHalloweenTheme(enabled)
 
-    fun setLessonTypeColor(type: LessonType, color: LessonColor) =
-        repository.setLessonTypeColor(type, color)
-    fun resetLessonTypeColors() = repository.resetLessonTypeColors()
     fun setCyberpunkVariant(variant: CyberpunkVariant) = repository.setCyberpunkVariant(variant)
 
     /** Матрица потеряна: выключается и исчезает из списка найденных тем. */
     fun revokeMatrixUnlock() = repository.revokeMatrixUnlock()
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
-    fun setAnalyticsEnabled(enabled: Boolean) = repository.setAnalyticsEnabled(enabled)
     fun setAppIcon(name: String) = repository.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = repository.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = repository.setNotifyMinutesBefore(minutes)
-    fun setVpnWarningEnabled(enabled: Boolean) = repository.setVpnWarningEnabled(enabled)
     fun setAskBeforeNoteDelete(ask: Boolean) = repository.setAskBeforeNoteDelete(ask)
 
     fun setDockTabs(tabs: List<AppTab>) {

@@ -52,7 +52,6 @@ fun ScheduleDisplaySettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
-    val hideAdditionalLessons by viewModel.hideAdditionalLessons.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
 
@@ -66,12 +65,6 @@ fun ScheduleDisplaySettingsScreen(
             subtitle = "Отображать окна между занятиями в списке пар",
             checked = showEmptyLessons,
             onCheckedChange = { viewModel.setShowEmptyLessons(it) }
-        )
-        SettingsToggleRow(
-            title = "Скрывать доп. занятия",
-            subtitle = "Не показывать пары типа «ДОП» в расписании, календаре и напоминаниях",
-            checked = hideAdditionalLessons,
-            onCheckedChange = { viewModel.setHideAdditionalLessons(it) }
         )
         SettingsToggleRow(
             title = "Сокращённые названия",

@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.data.storage
+package com.jetbrains.kmpapp.data.storage
 
 import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.data.notifications.NotificationsManager
@@ -74,9 +74,6 @@ class ScheduleStorage(
      */
     private val _calendarExpandState = MutableStateFlow(CalendarExpandState.WEEK)
     val calendarExpandState: StateFlow<CalendarExpandState> = _calendarExpandState.asStateFlow()
-
-    private val _hideAdditionalLessons = MutableStateFlow(false)
-    val hideAdditionalLessons: StateFlow<Boolean> = _hideAdditionalLessons.asStateFlow()
 
     private val _autoScrollToCurrentLesson = MutableStateFlow<Boolean>(true)
     val autoScrollToCurrentLesson: StateFlow<Boolean> = _autoScrollToCurrentLesson.asStateFlow()
@@ -214,9 +211,6 @@ class ScheduleStorage(
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
-    private val _vpnWarningEnabled = MutableStateFlow(true)
-    val vpnWarningEnabled: StateFlow<Boolean> = _vpnWarningEnabled.asStateFlow()
-
     private val _notifyMinutesBefore = MutableStateFlow(15)
     val notifyMinutesBefore: StateFlow<Int> = _notifyMinutesBefore.asStateFlow()
 
@@ -254,7 +248,6 @@ class ScheduleStorage(
         _calendarSwipeCollapse.value = loadBooleanFlag(KEY_CALENDAR_SWIPE_COLLAPSE, false)
         _calendarExpandState.value =
             CalendarExpandState.fromName(platformStorage.getString(KEY_CALENDAR_EXPAND_STATE))
-        _hideAdditionalLessons.value = loadBooleanFlag(KEY_HIDE_ADDITIONAL_LESSONS, false)
         _autoScrollToCurrentLesson.value = loadBooleanFlag(KEY_AUTO_SCROLL_CURRENT_LESSON, true)
         _showAbbreviatedNames.value = loadBooleanFlag(KEY_SHOW_ABBREVIATED_NAMES, false)
         _themeOverlay.value = loadThemeOverlay()
@@ -266,7 +259,9 @@ class ScheduleStorage(
             platformStorage.getString(KEY_HALLOWEEN_DISMISSED_YEAR)?.toIntOrNull()
         _cheatsAgreed.value = nullableFlag(KEY_CHEATS_AGREED)
         _cheatsBlocked.value = loadBooleanFlag(KEY_CHEATS_BLOCKED, false)
-        _analyticsEnabled.value = loadBooleanFlag(KEY_ANALYTICS_ENABLED, true)
+        // Аналитика всегда включена (решение владельца): ключ хранится
+        // только для обратной совместимости resetAllData.
+        ensureAnalyticsEnabled()
         // Миграция иконки: прошлые «Новая светлая/тёмная» и «Старая»
         // (AppIconClassic) слились в дефолт; неизвестные значения → дефолт.
         _appIcon.value = when (val saved = platformStorage.getString(KEY_APP_ICON)) {
@@ -276,7 +271,6 @@ class ScheduleStorage(
             else -> AppIconManager.ICON_DEFAULT
         }
         _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
-        _vpnWarningEnabled.value = loadBooleanFlag(KEY_VPN_WARNING_ENABLED, true)
         _notifyMinutesBefore.value =
             platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15
         _askBeforeNoteDelete.value = loadBooleanFlag(KEY_ASK_BEFORE_NOTE_DELETE, true)
@@ -453,18 +447,6 @@ class ScheduleStorage(
                 platformStorage.saveString(KEY_CALENDAR_EXPAND_STATE, state.name)
             } catch (e: Exception) {
                 println("Failed to persist calendarExpandState: ${e.message}")
-            }
-        }
-    }
-
-    /** Скрывать ли доп. занятия (ДОП) в расписании и уведомлениях. */
-    fun setHideAdditionalLessons(enabled: Boolean) {
-        _hideAdditionalLessons.value = enabled
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_HIDE_ADDITIONAL_LESSONS, enabled.toString())
-            } catch (e: Exception) {
-                println("Failed to persist hideAdditionalLessons: ${e.message}")
             }
         }
     }
@@ -697,10 +679,11 @@ class ScheduleStorage(
      * Найденные темы: сохранённые флаги разблокировок плюс сидирование из
      * легаси-ключей активности. Сид нужен пользователям, которые нашли тему
      * до введения списка: у них флаг активности равен true, и терять
-     * найденное из-за обновления несправедливо.
+     * найденное из-за обновления несправедливо. Киберпанк считается
+     * найденным по умолчанию (решение владельца).
      */
     private fun loadUnlockedThemes(): Set<ThemeOverlay> {
-        val set = mutableSetOf<ThemeOverlay>()
+        val set = mutableSetOf(ThemeOverlay.CYBERPUNK)
         if (loadBooleanFlag(KEY_UNLOCKED_KAWAII, false) ||
             platformStorage.getString(KEY_KAWAII_THEME)?.toBooleanStrictOrNull() == true
         ) {
@@ -732,11 +715,10 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
-    /** Тумблер опциональной аналитики (события использования). */
-    fun setAnalyticsEnabled(enabled: Boolean) {
-        _analyticsEnabled.value = enabled
-        com.jetbrains.kmpapp.data.analytics.AppAnalytics.setEventsEnabled(enabled)
-        scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
+    /** Аналитика событий: всегда включена (решение владельца). */
+    private fun ensureAnalyticsEnabled() {
+        _analyticsEnabled.value = true
+        com.jetbrains.kmpapp.data.analytics.AppAnalytics.setEventsEnabled(true)
     }
 
     /** Выбор иконки приложения; применяется немедленно (iOS), хранится для UI. */
@@ -777,11 +759,6 @@ class ScheduleStorage(
     fun setNotifyMinutesBefore(minutes: Int) {
         _notifyMinutesBefore.value = minutes.coerceIn(1, 120)
         scope.launch { platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, _notifyMinutesBefore.value.toString()) }
-    }
-
-    fun setVpnWarningEnabled(enabled: Boolean) {
-        _vpnWarningEnabled.value = enabled
-        scope.launch { platformStorage.saveString(KEY_VPN_WARNING_ENABLED, enabled.toString()) }
     }
 
     fun setAskBeforeNoteDelete(ask: Boolean) {
@@ -903,7 +880,6 @@ class ScheduleStorage(
     fun resetAllData() {
         val cheatsAgreedBefore = _cheatsAgreed.value
         val cheatsBlockedBefore = _cheatsBlocked.value
-        val analyticsEnabledBefore = _analyticsEnabled.value
         val notificationsEnabledBefore = _notificationsEnabled.value
         val notifyMinutesBeforeBefore = _notifyMinutesBefore.value
         val askBeforeNoteDeleteBefore = _askBeforeNoteDelete.value
@@ -918,7 +894,6 @@ class ScheduleStorage(
         _calendarCollapsed.value = false
         _calendarSwipeCollapse.value = false
         _calendarExpandState.value = CalendarExpandState.WEEK
-        _hideAdditionalLessons.value = false
         _autoScrollToCurrentLesson.value = true
         _showAbbreviatedNames.value = false
         // Пользовательские цвета занятий — тоже настройка, сбрасывается
@@ -937,9 +912,9 @@ class ScheduleStorage(
         _halloweenDismissedYear.value = null
         _cheatsAgreed.value = cheatsAgreedBefore
         _cheatsBlocked.value = cheatsBlockedBefore
-        _analyticsEnabled.value = analyticsEnabledBefore
+        // Аналитика всегда включена (решение владельца).
+        ensureAnalyticsEnabled()
         _notificationsEnabled.value = notificationsEnabledBefore
-        _vpnWarningEnabled.value = true
         _notifyMinutesBefore.value = notifyMinutesBeforeBefore
         _askBeforeNoteDelete.value = askBeforeNoteDeleteBefore
         _notePages.value = com.jetbrains.kmpapp.data.model.defaultNotePages()
@@ -951,11 +926,10 @@ class ScheduleStorage(
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
-            platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
+            platformStorage.remove(KEY_ANALYTICS_ENABLED)
             platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
             platformStorage.remove(KEY_LESSON_TYPE_COLORS)
             platformStorage.remove(KEY_CYBERPUNK_VARIANT)
-            platformStorage.saveString(KEY_VPN_WARNING_ENABLED, true.toString())
             platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, notifyMinutesBeforeBefore.toString())
             platformStorage.saveString(KEY_ASK_BEFORE_NOTE_DELETE, askBeforeNoteDeleteBefore.toString())
             platformStorage.saveString(KEY_DOCK_HIDDEN, false.toString())
@@ -993,7 +967,6 @@ class ScheduleStorage(
         private const val KEY_CALENDAR_SWIPE_COLLAPSE = "uschedule_calendar_swipe_collapse"
         // Ступень раскрытия ленты: WEEK | TWO_WEEKS | MONTH (issue #3).
         private const val KEY_CALENDAR_EXPAND_STATE = "uschedule_calendar_expand_state"
-        private const val KEY_HIDE_ADDITIONAL_LESSONS = "uschedule_hide_additional_lessons"
         private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "uschedule_auto_scroll_current_lesson"
         private const val KEY_SHOW_ABBREVIATED_NAMES = "uschedule_show_abbreviated_names"
         private const val KEY_APP_THEME = "uschedule_app_theme"
@@ -1019,7 +992,6 @@ class ScheduleStorage(
         private const val KEY_ANALYTICS_ENABLED = "uschedule_analytics_enabled"
         private const val KEY_APP_ICON = "uschedule_app_icon"
         private const val KEY_NOTIFICATIONS_ENABLED = "uschedule_notifications_enabled"
-        private const val KEY_VPN_WARNING_ENABLED = "uschedule_vpn_warning_enabled"
         private const val KEY_NOTIFY_MINUTES_BEFORE = "uschedule_notify_minutes_before"
         private const val KEY_ASK_BEFORE_NOTE_DELETE = "uschedule_ask_before_note_delete"
         private const val KEY_NOTES = "uschedule_notes_pages"

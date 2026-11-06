@@ -114,12 +114,6 @@ class ScheduleRepository(
     fun setCalendarExpandState(state: CalendarExpandState) =
         storage.setCalendarExpandState(state)
 
-    val hideAdditionalLessons: StateFlow<Boolean> = storage.hideAdditionalLessons
-
-    fun setHideAdditionalLessons(enabled: Boolean) {
-        storage.setHideAdditionalLessons(enabled)
-    }
-
     val autoScrollToCurrentLesson: StateFlow<Boolean> = storage.autoScrollToCurrentLesson
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {
@@ -151,7 +145,6 @@ class ScheduleRepository(
     val appIcon: StateFlow<String> = storage.appIcon
     val notificationsEnabled: StateFlow<Boolean> = storage.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = storage.notifyMinutesBefore
-    val vpnWarningEnabled: StateFlow<Boolean> = storage.vpnWarningEnabled
     val askBeforeNoteDelete: StateFlow<Boolean> = storage.askBeforeNoteDelete
 
     init {
@@ -191,11 +184,9 @@ class ScheduleRepository(
     fun clearHalloweenSeasonDismissal() = storage.clearHalloweenSeasonDismissal()
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
-    fun setAnalyticsEnabled(enabled: Boolean) = storage.setAnalyticsEnabled(enabled)
     fun setAppIcon(name: String) = storage.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = storage.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = storage.setNotifyMinutesBefore(minutes)
-    fun setVpnWarningEnabled(enabled: Boolean) = storage.setVpnWarningEnabled(enabled)
     fun setAskBeforeNoteDelete(ask: Boolean) = storage.setAskBeforeNoteDelete(ask)
     fun setLessonTypeColor(type: LessonType, color: LessonColor) =
         storage.setLessonTypeColor(type, color)

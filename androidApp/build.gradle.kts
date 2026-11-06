@@ -27,7 +27,7 @@ android {
             ?: System.getenv("BUILD_NUMBER")?.toIntOrNull()
             ?: 32
         // CI подставляет версию канала через tools/versioning.py; в репо — базовая версия линии разработки
-        versionName = "26.0.0"
+        versionName = "26.1.0"
     }
     signingConfigs {
         // Релизный ключ НЕ в репо: CI подаёт его из секретов org

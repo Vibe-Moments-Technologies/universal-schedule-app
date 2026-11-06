@@ -125,7 +125,6 @@ fun OtherScreen(
                         onOpenServiceSettings = { viewModel.navigateToSubScreen(OtherSubScreen.SERVICE_NOTES_SETTINGS) },
                         onOpenSaperSettings = { viewModel.navigateToSubScreen(OtherSubScreen.SAPER_SETTINGS) },
                         onOpenThemedThemes = { viewModel.navigateToSubScreen(OtherSubScreen.THEMED_THEMES) },
-                        onOpenLessonColors = { viewModel.navigateToSubScreen(OtherSubScreen.LESSON_COLORS) },
                         onOpenTetrisSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TETRIS_SETTINGS) }
                     )
                 }
@@ -152,9 +151,6 @@ fun OtherScreen(
                 }
                 OtherSubScreen.THEMED_THEMES -> {
                     ThemedThemesScreen(viewModel = viewModel, onBack = back)
-                }
-                OtherSubScreen.LESSON_COLORS -> {
-                    LessonColorSettingsScreen(viewModel = viewModel, onBack = back)
                 }
                 OtherSubScreen.SERVICE_NOTES_SETTINGS -> {
                     ServiceNotesSettingsScreen(viewModel = viewModel, onBack = back)

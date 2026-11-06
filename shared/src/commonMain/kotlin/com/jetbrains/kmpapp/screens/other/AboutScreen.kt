@@ -22,11 +22,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -185,9 +184,6 @@ fun AboutScreen(
 /** Почта проекта: пишем письма через mailto. */
 private const val PROJECT_EMAIL = "vibe.moments.technologies@gmail.com"
 
-/** TG-бот поддержки: быстрый канал вопросов. */
-private const val SUPPORT_BOT_URL = "https://t.me/l1ratch"
-
 @Composable
 private fun ContactsCard() {
     val uriHandler = LocalUriHandler.current
@@ -203,20 +199,11 @@ private fun ContactsCard() {
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(10.dp))
-            // Почта — первая, далее TG-бот поддержки (запрос владельца:
-            // переименован и переставлен после почты), затем Issue.
             ContactRow(
                 icon = Icons.Default.Email,
                 tint = MaterialTheme.colorScheme.primary,
                 text = PROJECT_EMAIL,
                 onClick = { uriHandler.openUri("mailto:$PROJECT_EMAIL") }
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            ContactRow(
-                icon = Icons.Default.Send,
-                tint = MaterialTheme.colorScheme.primary,
-                text = "Telegram Support Bot",
-                onClick = { uriHandler.openUri(SUPPORT_BOT_URL) }
             )
             Spacer(modifier = Modifier.height(4.dp))
             ContactRow(

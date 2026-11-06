@@ -101,14 +101,12 @@ fun SettingsScreen(
     onOpenServiceSettings: () -> Unit = {},
     onOpenSaperSettings: () -> Unit = {},
     onOpenThemedThemes: () -> Unit = {},
-    onOpenLessonColors: () -> Unit = {},
     onOpenTetrisSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
 
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
-    val hideAdditionalLessons by viewModel.hideAdditionalLessons.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
@@ -119,7 +117,6 @@ fun SettingsScreen(
     val isKawaiiTheme by viewModel.isKawaiiTheme.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
-    val vpnWarningEnabled by viewModel.vpnWarningEnabled.collectAsState()
     val semester by viewModel.semester.collectAsState()
     val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
     val dockHidden by viewModel.dockHidden.collectAsState()
@@ -290,14 +287,6 @@ fun SettingsScreen(
                     subtitle = "Сакура, кавай и найденные квестами",
                     onClick = onOpenThemedThemes
                 )
-
-                // Цвета типов занятий: бейджи карточек и точки календаря
-                Spacer(modifier = Modifier.height(12.dp))
-                SettingsNavigationRow(
-                    title = "Цвета занятий",
-                    subtitle = "Акценты для лекций, практик, лабораторных",
-                    onClick = onOpenLessonColors
-                )
             }
 
             // Section: Navigation & Dock
@@ -404,7 +393,7 @@ fun SettingsScreen(
             ) {
                 SettingsNavigationRow(
                     title = "Отображение",
-                    subtitle = "Пустые пары, ДОП-занятия, сокращения, авто-скролл",
+                    subtitle = "Пустые пары, сокращения, авто-скролл",
                     onClick = onOpenScheduleDisplay
                 )
                 HorizontalDivider(
@@ -435,7 +424,7 @@ fun SettingsScreen(
                 ) {
                     SettingsActionRow(
                         title = "Добавить на главный экран",
-                        subtitle = "Выберите расписание — система предложит разместить виджет. Убрать — долгим нажатием → «Удалить»",
+                        subtitle = "Система предложит разместить виджет. Убрать — долгим нажатием → «Удалить»",
                         icon = Icons.Default.Add,
                         onClick = {
                             // Внутренний конфигуратор (решение владельца):
@@ -499,7 +488,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             GlitchText(
-                                text = "Локальное напоминание до начала пары выбранного расписания. Работает без интернета, прямо на устройстве",
+                                text = "Локальное напоминание до начала пары. Работает без интернета, прямо на устройстве",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -601,37 +590,6 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                }
-            }
-
-            // Section: Additional features (объединённый блок)
-            SettingsSectionCard(
-                title = "Дополнительный функционал",
-                icon = Icons.Default.Tune
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        GlitchText(
-                            text = "Предупреждения о VPN",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        GlitchText(
-                            text = "Показывать предупреждение, если VPN может помешать обновлению расписания",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = vpnWarningEnabled,
-                        onCheckedChange = { viewModel.setVpnWarningEnabled(it) }
-                    )
                 }
             }
 
@@ -750,7 +708,7 @@ fun SettingsScreen(
             text = {
                 GlitchText(
                     "Напоминания включатся, только когда система разрешит приложению показывать уведомления. " +
-                        "Разрешите их для «Красавы» в настройках телефона и вернитесь включить напоминания."
+                        "Разрешите их для «Расписания» в настройках телефона и вернитесь включить напоминания."
                 )
             },
             confirmButton = {
