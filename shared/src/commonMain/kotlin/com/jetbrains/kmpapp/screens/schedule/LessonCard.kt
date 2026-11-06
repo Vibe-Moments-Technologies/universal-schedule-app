@@ -115,7 +115,10 @@ fun LessonCard(
     pageIndicator: Pair<Int, Int>? = null,
     horizontalMargin: androidx.compose.ui.unit.Dp = 16.dp
 ) {
-    val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
+    // Кастомный цвет пары (v2) или встроенная пара цветов по типу.
+    val (typeBg, typeTextColor) = lesson.colorHex?.let { hex ->
+        badgeColorsFromHex(hex)
+    } ?: getTypeBadgeColors(lesson.lessonType)
 
 
     // ponytail: State протягивается вниз и читается ТОЛЬКО на сегодняшних
@@ -190,7 +193,7 @@ fun LessonCard(
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             GlitchText(
-                                text = lesson.lessonType.displayName,
+                                text = lesson.typeDisplayName,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = typeTextColor
@@ -565,4 +568,26 @@ internal fun getTypeBadgeColors(lessonType: LessonType): Pair<Color, Color> {
         else Color(0xFFCBD5E1) to Color(0xFF475569)
     }
     return if (isDark) colors[0] else colors[1]
+}
+
+/**
+ * Бейдж из персонального цвета пары (#RRGGBB, v2 формата): полупрозрачная
+ * плашка с акцентом. Некорректный hex — нейтральный серый.
+ */
+@Composable
+internal fun badgeColorsFromHex(hex: String): Pair<Color, Color> {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val accent = parseColorHex(hex)
+        ?: return if (isDark) Color(0xFF334155) to Color(0xFFCBD5E1)
+        else Color(0xFFCBD5E1) to Color(0xFF475569)
+    val background = accent.copy(alpha = if (isDark) 0.22f else 0.16f)
+    return background to accent
+}
+
+/** «#RRGGBB» или «RRGGBB» → Color; null при некорректной записи. */
+internal fun parseColorHex(hex: String): Color? {
+    val clean = hex.removePrefix("#").trim()
+    if (clean.length != 6) return null
+    val value = clean.toLongOrNull(16) ?: return null
+    return Color((0xFF000000L or value).toInt())
 }

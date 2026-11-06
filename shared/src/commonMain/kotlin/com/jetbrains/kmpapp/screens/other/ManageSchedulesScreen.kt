@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,8 +50,11 @@ import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
  * Экран «Моё расписание»: единственный локальный семестр.
  *
  * Просмотр заголовка, удаление, экспорт JSON в буфер и импорт из него.
- * Сборка/редактирование семестра — в конфигураторе.
+ * Сборка семестра — в веб-конфигураторе на gh-pages.
  */
+private const val WEB_CONFIGURATOR_URL =
+    "https://vibe-moments-technologies.github.io/universal-schedule-app/configurator/"
+
 @Composable
 fun ManageSchedulesScreen(
     viewModel: OtherViewModel,
@@ -60,6 +64,7 @@ fun ManageSchedulesScreen(
     PlatformBackHandler(onBack = onBack)
     val semester by viewModel.semester.collectAsState()
     val clipboard = LocalClipboardManager.current
+    val uriHandler = LocalUriHandler.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showImportField by remember { mutableStateOf(false) }
     var importDraft by remember { mutableStateOf("") }
@@ -113,10 +118,13 @@ fun ManageSchedulesScreen(
                             Text("Семестр не собран", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
                         Text(
-                            "Расписание собирается один раз в конфигураторе и живёт на устройстве. Импортируйте готовый JSON — например, с другого устройства.",
+                            "Соберите семестр в веб-конфигураторе — на компьютере или прямо здесь, — скачайте JSON и импортируйте его кнопкой ниже. Дальше расписание живёт на устройстве.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        OutlinedButton(onClick = { uriHandler.openUri(WEB_CONFIGURATOR_URL) }) {
+                            Text("Открыть веб-конфигуратор")
+                        }
                     }
                 }
             } else {
@@ -163,6 +171,13 @@ fun ManageSchedulesScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Скопировать JSON расписания")
+                }
+
+                OutlinedButton(
+                    onClick = { uriHandler.openUri(WEB_CONFIGURATOR_URL) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Пересобрать в веб-конфигураторе")
                 }
 
                 OutlinedButton(

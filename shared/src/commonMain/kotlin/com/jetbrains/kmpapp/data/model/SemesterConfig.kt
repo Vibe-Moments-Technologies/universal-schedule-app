@@ -32,6 +32,10 @@ data class ScheduleEntry(
     val bellNumber: Int,
     val subject: String,
     val lessonType: LessonType = LessonType.OTHER,
+    /** Кастомный тип из [SemesterConfig.customTypes] (приоритетнее встроенного). */
+    val customTypeId: String? = null,
+    /** Персональный цвет пары (#RRGGBB); null — цвет по типу. */
+    val colorHex: String? = null,
     val teacher: String = "",
     val classroom: String = "",
     val subgroup: String = "",
@@ -50,6 +54,18 @@ data class ScheduleEntry(
     }
 }
 
+/**
+ * Кастомный тип занятия: название и цвет, свободно задаётся в конфигураторе.
+ * Пары с этим типом ссылаются на него по [id] из [ScheduleEntry.customTypeId].
+ */
+@Serializable
+data class CustomLessonType(
+    val id: String,
+    val displayName: String,
+    /** Цвет акцента пар этого типа (#RRGGBB); null — нейтральный. */
+    val colorHex: String? = null
+)
+
 /** Конфигурация одного активного семестра. */
 @Serializable
 data class SemesterConfig(
@@ -64,7 +80,9 @@ data class SemesterConfig(
     val startDate: LocalDate,
     val weeksCount: Int = 17,
     val bells: List<LessonBells> = defaultBells,
-    val entries: List<ScheduleEntry> = emptyList()
+    val entries: List<ScheduleEntry> = emptyList(),
+    /** Кастомные типы занятий (v1.1): свободные названия и цвета. */
+    val customTypes: List<CustomLessonType> = emptyList()
 ) {
     companion object {
         /** Единый id «цели» локального расписания (заметки к парам и т.п.). */
@@ -98,6 +116,8 @@ data class SemesterConfig(
                 if (!entry.occursOnWeek(week, weeksCount)) continue
                 val bell = bells.firstOrNull { it.number == entry.bellNumber } ?: continue
                 val date = monday.plus(DatePeriod(days = entry.dayOfWeek - 1))
+                val customType = entry.customTypeId
+                    ?.let { id -> customTypes.firstOrNull { it.id == id } }
                 out += Lesson(
                     id = "${entry.id}_w$week",
                     subject = entry.subject,
@@ -108,7 +128,10 @@ data class SemesterConfig(
                     startTime = bell.startTime,
                     endTime = bell.endTime,
                     date = date,
-                    groups = listOf(entry.subgroup).filter { it.isNotBlank() }
+                    groups = listOf(entry.subgroup).filter { it.isNotBlank() },
+                    customTypeName = customType?.displayName,
+                    // Персональный цвет пары; иначе цвет её кастомного типа.
+                    colorHex = entry.colorHex ?: customType?.colorHex
                 )
             }
         }
@@ -131,6 +154,7 @@ data class ScheduleExport(
 ) {
     companion object {
         const val FORMAT = "universal-schedule"
-        const val VERSION = 1
+        /** v2: добавлены customTypes, entry.customTypeId и entry.colorHex. */
+        const val VERSION = 2
     }
 }

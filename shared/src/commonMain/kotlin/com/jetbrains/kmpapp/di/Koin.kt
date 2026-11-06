@@ -6,7 +6,6 @@ import com.jetbrains.kmpapp.data.storage.GamesStorage
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
-import com.jetbrains.kmpapp.screens.configurator.ConfiguratorViewModel
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import io.ktor.client.HttpClient
@@ -63,7 +62,6 @@ val viewModelModule = module {
     factoryOf(::NotesViewModel)
     factoryOf(::ServicesViewModel)
     factoryOf(::GamesViewModel)
-    factoryOf(::ConfiguratorViewModel)
 }
 
 fun initKoin() {

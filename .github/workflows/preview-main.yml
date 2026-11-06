@@ -1,4 +1,4 @@
-﻿name: 🚧 Main Preview Build (Rolling)
+name: 🚧 Main Preview Build (Rolling)
 
 # Тестовые сборки main. Каждый push в main (только код приложения) собирает
 # версию {RELEASE_VERSION}-dev.N и заменяет файлы в ОДНОМ rolling-prerelease
@@ -289,6 +289,9 @@ jobs:
 
       - name: 📋 Copy remote config
         run: cp config.json dist_version/
+
+      - name: 🛠️ Copy web configurator (docs/configurator → /configurator)
+        run: cp -r docs/configurator dist_version/configurator
 
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

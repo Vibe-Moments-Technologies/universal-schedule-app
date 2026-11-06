@@ -1,6 +1,4 @@
 package com.jetbrains.kmpapp.screens.schedule
-import com.jetbrains.kmpapp.screens.configurator.ConfiguratorScreen
-import com.jetbrains.kmpapp.screens.configurator.ConfiguratorViewModel
 import com.jetbrains.kmpapp.theme.GlitchText
 
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +19,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -63,15 +62,17 @@ import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
 import kotlin.math.abs
 
+/** Веб-конфигуратор семестра (gh-pages): сборка и экспорт JSON. */
+private const val WEB_CONFIGURATOR_URL =
+    "https://vibe-moments-technologies.github.io/universal-schedule-app/configurator/"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     viewModel: ScheduleViewModel,
-    configuratorViewModel: ConfiguratorViewModel,
     modifier: Modifier = Modifier,
     // Не null при скрытом доке: шестерёнка в топбаре открывает «Другое».
-    onOpenOther: (() -> Unit)? = null,
-    onOpenConfigurator: (() -> Unit)? = null
+    onOpenOther: (() -> Unit)? = null
 ) {
     val selectedLessonForDetail by viewModel.selectedLessonForDetail.collectAsState()
 
@@ -83,9 +84,7 @@ fun ScheduleScreen(
         initiallyRevealed = remember { selectedLessonForDetail != null },
         rootContent = { ScheduleMainContent(
             viewModel = viewModel,
-            configuratorViewModel = configuratorViewModel,
-            onOpenOther = onOpenOther,
-            onOpenConfigurator = onOpenConfigurator
+            onOpenOther = onOpenOther
         ) },
         screenContent = { detailLesson, back ->
             LessonDetailScreen(
@@ -101,10 +100,8 @@ fun ScheduleScreen(
 @Composable
 private fun ScheduleMainContent(
     viewModel: ScheduleViewModel,
-    configuratorViewModel: ConfiguratorViewModel,
     modifier: Modifier = Modifier,
-    onOpenOther: (() -> Unit)? = null,
-    onOpenConfigurator: (() -> Unit)? = null
+    onOpenOther: (() -> Unit)? = null
 ) {
     val semester by viewModel.semester.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
@@ -179,7 +176,7 @@ private fun ScheduleMainContent(
                 modifier = Modifier.fillMaxSize()
             ) {
             if (semester == null) {
-                // Семестр ещё не собран
+                // Семестр ещё не собран: направляем в веб-конфигуратор
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -204,22 +201,31 @@ private fun ScheduleMainContent(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         GlitchText(
-                            text = "Соберите семестр в конфигураторе: вуз, группа, звонки и недельный шаблон занятий — расписание живёт на устройстве, без интернета",
+                            text = "Соберите семестр в веб-конфигураторе на компьютере или телефоне: вуз, группа, звонки и недельный шаблон занятий. Затем импортируйте JSON в «Моё расписание» — дальше всё работает на устройстве, без интернета",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
+                        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                         androidx.compose.material3.Button(
-                            onClick = { onOpenConfigurator?.invoke() },
+                            onClick = {
+                                uriHandler.openUri(WEB_CONFIGURATOR_URL)
+                            },
                             modifier = Modifier.padding(horizontal = 32.dp)
                         ) {
                             androidx.compose.material3.Icon(
-                                imageVector = Icons.Default.Settings,
+                                imageVector = Icons.Default.Language,
                                 contentDescription = null
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Открыть конфигуратор")
+                            Text("Открыть веб-конфигуратор")
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        androidx.compose.material3.TextButton(
+                            onClick = { onOpenOther?.invoke() }
+                        ) {
+                            Text("Импортировать в «Моём расписании»")
                         }
                     }
                 }

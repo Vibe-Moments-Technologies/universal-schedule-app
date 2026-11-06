@@ -50,8 +50,16 @@ data class Lesson(
     val startTime: String,
     val endTime: String,
     val date: LocalDate,
-    val groups: List<String> = emptyList()
+    val groups: List<String> = emptyList(),
+    /** Название кастомного типа занятия (v1.1); null — встроенный тип. */
+    val customTypeName: String? = null,
+    /** Персональный цвет пары #RRGGBB (v1.1); null — цвет по типу. */
+    val colorHex: String? = null
 ) {
+    /** Отображаемое имя типа: кастомное или встроенное. */
+    val typeDisplayName: String
+        get() = customTypeName ?: lessonType.displayName
+
     /**
      * Дистанционная пара: аудитория в фиде приходит строкой «СДО» (сайт вуза
      * online-edu.mirea.ru), а не номером аудитории. Корпусом она не является

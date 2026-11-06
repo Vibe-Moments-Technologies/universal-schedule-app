@@ -1,4 +1,4 @@
-﻿name: 🚀 Release Mobile (Tag v*)
+name: 🚀 Release Mobile (Tag v*)
 
 # Релизный сборщик. Запускается ТОЛЬКО пушем тега v26.10 / v26.10.1 /
 # v26.10-beta.1 / v26.10-rc.1 или вручную (dispatch с указанием тега).
@@ -310,6 +310,9 @@ jobs:
 
       - name: 📋 Copy remote config
         run: cp config.json dist_version/
+
+      - name: 🛠️ Copy web configurator (docs/configurator → /configurator)
+        run: cp -r docs/configurator dist_version/configurator
 
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

@@ -35,7 +35,6 @@ import com.jetbrains.kmpapp.screens.notes.NotesScreen
 import com.jetbrains.kmpapp.screens.notes.NotesViewModel
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
-import com.jetbrains.kmpapp.screens.configurator.ConfiguratorViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.services.ServicesScreen
@@ -112,7 +111,6 @@ fun App() {
     val cyberpunkVariant by repository.cyberpunkVariant.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
-    val configuratorViewModel: ConfiguratorViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
     val notesViewModel: NotesViewModel = koinViewModel()
@@ -334,15 +332,12 @@ fun App() {
                         rootContent = {
                             ScheduleScreen(
                                 viewModel = scheduleViewModel,
-                                configuratorViewModel = configuratorViewModel,
-                                onOpenOther = { currentTab = AppTab.OTHER },
-                                onOpenConfigurator = { currentTab = AppTab.OTHER; otherViewModel.navigateToSubScreen(com.jetbrains.kmpapp.screens.other.OtherSubScreen.CONFIGURATOR) }
+                                onOpenOther = { currentTab = AppTab.OTHER }
                             )
                         },
                         screenContent = { _, back ->
                             OtherScreen(
                                 viewModel = otherViewModel,
-                                configuratorViewModel = configuratorViewModel,
                                 gamesViewModel = gamesViewModel,
                                 onNavigateToTab = { currentTab = it },
                                 onBack = back
@@ -354,9 +349,7 @@ fun App() {
                     when (tab) {
                         AppTab.SCHEDULE -> {
                             ScheduleScreen(
-                                viewModel = scheduleViewModel,
-                                configuratorViewModel = configuratorViewModel,
-                                onOpenConfigurator = { otherViewModel.navigateToSubScreen(com.jetbrains.kmpapp.screens.other.OtherSubScreen.CONFIGURATOR) }
+                                viewModel = scheduleViewModel
                             )
                         }
                         AppTab.TASKS -> {
@@ -378,7 +371,6 @@ fun App() {
                         AppTab.OTHER -> {
                             OtherScreen(
                                 viewModel = otherViewModel,
-                                configuratorViewModel = configuratorViewModel,
                                 gamesViewModel = gamesViewModel,
                                 onNavigateToTab = { currentTab = it }
                             )
