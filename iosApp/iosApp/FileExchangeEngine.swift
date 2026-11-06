@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 import UniformTypeIdentifiers
-import shared
+import Shared
 
 /// Мост файлового обмена семестром: share-лист для экспорта,
 /// системный выбор документа для импорта. Регистрируется в iOSApp.init
