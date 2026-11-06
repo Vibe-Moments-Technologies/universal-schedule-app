@@ -48,6 +48,8 @@ struct iOSApp: App {
         NotificationsManager.shared.setEngine(newEngine: notifications)
         notifications.sweepStaleLessonReminders()
         NotificationPresenter.shared.attach()
+        com.jetbrains.kmpapp.data.files.FileExchangeEngineHolder.shared.engine =
+            FileExchangeEngine()
         AppRuntimeInfo.shared.setEngine(newEngine: AppGroupInfoEngine())
         AppRuntimeInfo.shared.setEngine(newEngine: AppGroupInfoEngine())
     }

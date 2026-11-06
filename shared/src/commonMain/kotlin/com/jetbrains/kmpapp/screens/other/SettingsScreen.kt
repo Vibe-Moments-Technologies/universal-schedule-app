@@ -119,7 +119,6 @@ fun SettingsScreen(
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
     val semester by viewModel.semester.collectAsState()
     val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
-    val dockHidden by viewModel.dockHidden.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
@@ -321,31 +320,6 @@ fun SettingsScreen(
                         contentDescription = "Открыть",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-                // Скрыть док целиком: «Другое» становится подстраницей
-                // расписания (шестерёнка в топбаре), сервисы — блоками в нём.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        GlitchText(
-                            text = "Скрывать панель навигации",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        GlitchText(
-                            text = "«Другое» откроется шестерёнкой на странице расписания, сервисы — блоками внутри него",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(checked = dockHidden, onCheckedChange = viewModel::setDockHidden)
                 }
             }
 

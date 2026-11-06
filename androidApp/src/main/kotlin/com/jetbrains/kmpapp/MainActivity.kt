@@ -2,6 +2,7 @@ package com.jetbrains.kmpapp
 
 import android.Manifest
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -12,6 +13,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import androidx.compose.runtime.LaunchedEffect
+import com.jetbrains.kmpapp.data.files.FilePickersBridge
+import com.jetbrains.kmpapp.data.files.PendingPick
 import com.jetbrains.kmpapp.notifications.AndroidNotificationsEngine
 import com.jetbrains.kmpapp.widget.ScheduleWidgetStore
 import kotlinx.coroutines.CoroutineScope
@@ -23,8 +26,27 @@ class MainActivity : ComponentActivity() {
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    /** Импорт JSON-семестра: результат уходит в колбэк выбора файла. */
+    private val openJsonDocument =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            val callback = PendingPick.holder
+            PendingPick.holder = null
+            if (uri == null) {
+                callback?.invoke(null)
+                return@registerForActivityResult
+            }
+            val text = try {
+                contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+            } catch (e: Exception) {
+                null
+            }
+            callback?.invoke(text)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Файловый обмен семестром: лаунчер должен жить в активности.
+        FilePickersBridge.openDocument = openJsonDocument
         // Разрешение POST_NOTIFICATIONS (API 33+) просится только в момент,
         // когда пользователь включает тумблер напоминаний в настройках.
         // lifecycle-контекст обязателен: launch вне RESUMED кидает

@@ -61,15 +61,6 @@ internal fun ProjectSocialLinks() {
                 modifier = Modifier.weight(1f)
             )
             SocialIcon(
-                icon = TelegramMark,
-                tint = Color(0xFF29A9EB),
-                contentDescription = "Telegram",
-                onClick = {
-                    uriHandler.openUri(SOCIAL_TELEGRAM)
-                },
-                modifier = Modifier.weight(1f)
-            )
-            SocialIcon(
                 icon = BoostyMark,
                 tint = Color(0xFFF15F2F),
                 contentDescription = "Boosty",
@@ -88,7 +79,6 @@ internal fun ProjectSocialLinks() {
 }
 
 private const val SOCIAL_GITHUB = "https://github.com/Vibe-Moments-Technologies/universal-schedule-app"
-private const val SOCIAL_TELEGRAM = "https://t.me/l1ratch"
 private const val SOCIAL_BOOSTY = "https://boosty.to/vibe.moments.technologies"
 
 /**

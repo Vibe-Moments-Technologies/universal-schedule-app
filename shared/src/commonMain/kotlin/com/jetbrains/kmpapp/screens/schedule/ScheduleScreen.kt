@@ -158,7 +158,6 @@ private fun ScheduleMainContent(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ScheduleTopBar(
-                semester = semester,
                 calendarBadgeDay = if (semester != null && calendarCollapsed) selectedDate.day else null,
                 onCalendarBadgeClick = { viewModel.setCalendarCollapsed(false) },
                 onCalendarBadgeLongClick = { showMonthPicker = true },

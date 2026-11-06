@@ -274,7 +274,9 @@ class ScheduleStorage(
         _notifyMinutesBefore.value =
             platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15
         _askBeforeNoteDelete.value = loadBooleanFlag(KEY_ASK_BEFORE_NOTE_DELETE, true)
-        _dockHidden.value = loadBooleanFlag(KEY_DOCK_HIDDEN, false)
+        // Панель навигации всегда видна (решение владельца): флаг
+        // совместимости сбрасывается, тумблер из настроек убран.
+        _dockHidden.value = false
     }
 
     private fun loadBooleanFlag(key: String, default: Boolean): Boolean = try {
