@@ -48,7 +48,7 @@ struct iOSApp: App {
         NotificationsManager.shared.setEngine(newEngine: notifications)
         notifications.sweepStaleLessonReminders()
         NotificationPresenter.shared.attach()
-        VpnStatus.shared.setEngine(newEngine: VpnEngine())
+        AppRuntimeInfo.shared.setEngine(newEngine: AppGroupInfoEngine())
         AppRuntimeInfo.shared.setEngine(newEngine: AppGroupInfoEngine())
     }
 
