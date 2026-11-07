@@ -60,9 +60,6 @@ class ScheduleStorage(
     private val _calendarCollapsed = MutableStateFlow(false)
     val calendarCollapsed: StateFlow<Boolean> = _calendarCollapsed.asStateFlow()
 
-    private val _calendarSwipeCollapse = MutableStateFlow(false)
-    val calendarSwipeCollapse: StateFlow<Boolean> = _calendarSwipeCollapse.asStateFlow()
-
     /**
      * Ступень раскрытия ленты календаря (issue #3): неделя → две недели →
      * месяц. Свайп вниз по календарику раскрывает, вверх — сворачивает.
@@ -245,7 +242,6 @@ class ScheduleStorage(
         _showEmptyLessonProgress.value = loadBooleanFlag(KEY_SHOW_EMPTY_LESSON_PROGRESS, true)
         _showBreakProgress.value = loadBooleanFlag(KEY_SHOW_BREAK_PROGRESS, true)
         _calendarCollapsed.value = loadBooleanFlag(KEY_CALENDAR_COLLAPSED, false)
-        _calendarSwipeCollapse.value = loadBooleanFlag(KEY_CALENDAR_SWIPE_COLLAPSE, false)
         _calendarExpandState.value =
             CalendarExpandState.fromName(platformStorage.getString(KEY_CALENDAR_EXPAND_STATE))
         _autoScrollToCurrentLesson.value = loadBooleanFlag(KEY_AUTO_SCROLL_CURRENT_LESSON, true)
@@ -421,22 +417,6 @@ class ScheduleStorage(
                 platformStorage.saveString(KEY_CALENDAR_COLLAPSED, collapsed.toString())
             } catch (e: Exception) {
                 println("Failed to persist calendarCollapsed: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Разрешено ли сворачивать ленту календаря свайпом. Жест теперь живёт
-     * на всей области календарика (не на отдельной полосе), свайп вверх
-     * в ступени WEEK сворачивает ленту — если это разрешено настройкой.
-     */
-    fun setCalendarSwipeCollapse(enabled: Boolean) {
-        _calendarSwipeCollapse.value = enabled
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_CALENDAR_SWIPE_COLLAPSE, enabled.toString())
-            } catch (e: Exception) {
-                println("Failed to persist calendarSwipeCollapse: ${e.message}")
             }
         }
     }
@@ -813,13 +793,9 @@ class ScheduleStorage(
 
     private fun sanitizeDockTabs(tabs: List<AppTab>): List<AppTab> {
         return try {
-            var middle = tabs.filter { !it.isFixed }.distinct().take(3)
-            // Правило владельца: док не может опустеть до двух базовых
-            // разделов — «Сервисы» ставятся между ними и «блокируются»,
-            // пока в доке не появится другой скрываемый раздел.
-            if (middle.none { it != AppTab.SERVICES }) {
-                middle = listOf(AppTab.SERVICES)
-            }
+            // Сервисы не обязаны присутствовать: док может состоять из
+            // одних базовых разделов, скрытые сервисы живут в «Другом».
+            val middle = tabs.filter { !it.isFixed }.distinct().take(3)
             listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
         } catch (_: Throwable) {
             DEFAULT_DOCK_TABS
@@ -894,7 +870,6 @@ class ScheduleStorage(
         _showEmptyLessonProgress.value = true
         _showBreakProgress.value = true
         _calendarCollapsed.value = false
-        _calendarSwipeCollapse.value = false
         _calendarExpandState.value = CalendarExpandState.WEEK
         _autoScrollToCurrentLesson.value = true
         _showAbbreviatedNames.value = false
@@ -966,7 +941,6 @@ class ScheduleStorage(
         private const val KEY_SHOW_EMPTY_LESSON_PROGRESS = "uschedule_show_empty_lesson_progress"
         private const val KEY_SHOW_BREAK_PROGRESS = "uschedule_show_break_progress"
         private const val KEY_CALENDAR_COLLAPSED = "uschedule_calendar_collapsed"
-        private const val KEY_CALENDAR_SWIPE_COLLAPSE = "uschedule_calendar_swipe_collapse"
         // Ступень раскрытия ленты: WEEK | TWO_WEEKS | MONTH (issue #3).
         private const val KEY_CALENDAR_EXPAND_STATE = "uschedule_calendar_expand_state"
         private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "uschedule_auto_scroll_current_lesson"

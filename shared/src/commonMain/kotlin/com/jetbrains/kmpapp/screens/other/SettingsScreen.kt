@@ -97,7 +97,6 @@ fun SettingsScreen(
     onOpenIconPicker: () -> Unit = {},
     onOpenScheduleDisplay: () -> Unit = {},
     onOpenScheduleProgress: () -> Unit = {},
-    onOpenScheduleCalendar: () -> Unit = {},
     onOpenServiceSettings: () -> Unit = {},
     onOpenSaperSettings: () -> Unit = {},
     onOpenThemedThemes: () -> Unit = {},
@@ -110,7 +109,6 @@ fun SettingsScreen(
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
-    val calendarSwipeCollapse by viewModel.calendarSwipeCollapse.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
@@ -378,15 +376,6 @@ fun SettingsScreen(
                     title = "Прогресс и индикаторы",
                     subtitle = "Полоски времени, прогресс перемены",
                     onClick = onOpenScheduleProgress
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-                SettingsNavigationRow(
-                    title = "Календарь",
-                    subtitle = "Сворачивание свайпом",
-                    onClick = onOpenScheduleCalendar
                 )
             }
 

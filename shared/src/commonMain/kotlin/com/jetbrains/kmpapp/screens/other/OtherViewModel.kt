@@ -36,7 +36,6 @@ enum class OtherSubScreen(val depth: Int) {
     // Подстраницы настроек расписания
     SCHEDULE_DISPLAY(2),
     SCHEDULE_PROGRESS(2),
-    SCHEDULE_CALENDAR(2),
     // Тематические темы: найденные квестами надстройки тем
     THEMED_THEMES(2),
     // Параметры сервисов
@@ -65,7 +64,6 @@ private val SUB_SCREEN_PARENT = mapOf(
     OtherSubScreen.ICON_PICKER to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_DISPLAY to OtherSubScreen.SETTINGS,
     OtherSubScreen.SCHEDULE_PROGRESS to OtherSubScreen.SETTINGS,
-    OtherSubScreen.SCHEDULE_CALENDAR to OtherSubScreen.SETTINGS,
     OtherSubScreen.THEMED_THEMES to OtherSubScreen.SETTINGS,
     OtherSubScreen.SERVICE_NOTES_SETTINGS to OtherSubScreen.SETTINGS,
     OtherSubScreen.SAPER_SETTINGS to OtherSubScreen.SETTINGS,
@@ -111,7 +109,6 @@ class OtherViewModel(
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val showEmptyLessonProgress: StateFlow<Boolean> = repository.showEmptyLessonProgress
     val showBreakProgress: StateFlow<Boolean> = repository.showBreakProgress
-    val calendarSwipeCollapse: StateFlow<Boolean> = repository.calendarSwipeCollapse
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
@@ -172,10 +169,6 @@ class OtherViewModel(
 
     fun setShowBreakProgress(enabled: Boolean) {
         repository.setShowBreakProgress(enabled)
-    }
-
-    fun setCalendarSwipeCollapse(enabled: Boolean) {
-        repository.setCalendarSwipeCollapse(enabled)
     }
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {

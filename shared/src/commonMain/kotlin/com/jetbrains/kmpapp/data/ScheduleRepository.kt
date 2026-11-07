@@ -103,12 +103,6 @@ class ScheduleRepository(
         storage.setCalendarCollapsed(collapsed)
     }
 
-    val calendarSwipeCollapse: StateFlow<Boolean> = storage.calendarSwipeCollapse
-
-    fun setCalendarSwipeCollapse(enabled: Boolean) {
-        storage.setCalendarSwipeCollapse(enabled)
-    }
-
     val calendarExpandState: StateFlow<CalendarExpandState> = storage.calendarExpandState
 
     fun setCalendarExpandState(state: CalendarExpandState) =

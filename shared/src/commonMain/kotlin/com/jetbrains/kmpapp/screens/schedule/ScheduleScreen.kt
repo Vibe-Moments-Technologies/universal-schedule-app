@@ -112,7 +112,6 @@ private fun ScheduleMainContent(
     val showEmptyLessonProgress by viewModel.showEmptyLessonProgress.collectAsState()
     val showBreakProgress by viewModel.showBreakProgress.collectAsState()
     val calendarCollapsed by viewModel.calendarCollapsed.collectAsState()
-    val calendarSwipeCollapse by viewModel.calendarSwipeCollapse.collectAsState()
     val calendarExpandState by viewModel.calendarExpandState.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
@@ -241,7 +240,6 @@ private fun ScheduleMainContent(
                         lessonSummaries = dayLessonSummaries,
                         onTitleClick = { showMonthPicker = true },
                         onCollapse = { viewModel.setCalendarCollapsed(true) },
-                        swipeCollapseEnabled = calendarSwipeCollapse,
                         expandState = calendarExpandState,
                         onExpandStateChange = { state ->
                             if (state == CalendarExpandState.MONTH) {

@@ -69,7 +69,6 @@ fun WeekCalendarStrip(
     lessonSummaries: Map<LocalDate, DayLessonSummary> = emptyMap(),
     onTitleClick: () -> Unit = {},
     onCollapse: () -> Unit = {},
-    swipeCollapseEnabled: Boolean = false,
     expandState: CalendarExpandState = CalendarExpandState.WEEK,
     onExpandStateChange: (CalendarExpandState) -> Unit = {},
     modifier: Modifier = Modifier
@@ -123,7 +122,6 @@ fun WeekCalendarStrip(
     // Лямбды ниже читают эти делегаты, поэтому pointerInput всегда видит
     // актуальные значения, хотя сам блок перезапускаться не должен.
     val currentOnCollapse by rememberUpdatedState(onCollapse)
-    val currentSwipeCollapseEnabled by rememberUpdatedState(swipeCollapseEnabled)
     val currentExpandState by rememberUpdatedState(expandState)
     val currentOnExpandStateChange by rememberUpdatedState(onExpandStateChange)
 
@@ -154,11 +152,6 @@ fun WeekCalendarStrip(
                     val next = currentExpandState.onSwipeUp()
                     if (next != currentExpandState) {
                         currentOnExpandStateChange(next)
-                    } else if (currentExpandState == CalendarExpandState.WEEK && currentSwipeCollapseEnabled) {
-                        // Дальше сворачивать некуда: в WEEK свайп вверх
-                        // сворачивает ленту целиком — как раньше делала
-                        // 14dp-полоса, только с большей области захвата.
-                        currentOnCollapse()
                     }
                 }
             )
