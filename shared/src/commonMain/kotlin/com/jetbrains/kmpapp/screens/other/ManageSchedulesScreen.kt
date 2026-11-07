@@ -22,6 +22,11 @@ import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.QrCodeScanner
+import com.jetbrains.kmpapp.data.qr.QrImageGenerator
+import com.jetbrains.kmpapp.data.qr.QrMatrix
+import com.jetbrains.kmpapp.data.qr.SemesterQrCodec
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -68,6 +74,13 @@ fun ManageSchedulesScreen(
     val uriHandler = LocalUriHandler.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
+    // QR: показать код семестра (передача) — payload или ошибка размера.
+    var qrPayload by remember { mutableStateOf<String?>(null) }
+    var qrTooBig by remember { mutableStateOf(false) }
+    // QR: приём — поле вставки отсканированной строки.
+    var showQrImport by remember { mutableStateOf(false) }
+    var qrImportDraft by remember { mutableStateOf("") }
+    var qrImportError by remember { mutableStateOf<String?>(null) }
 
     fun importFromFile() {
         SemesterFileExchange.pickJsonFile { text ->
@@ -82,6 +95,21 @@ fun ManageSchedulesScreen(
         val group = semester?.group?.takeIf { it.isNotBlank() }?.replace(Regex("[^\\wа-яА-Я-]+"), "_")
             ?: "semester"
         SemesterFileExchange.shareFile("schedule-$group.json", json)
+    }
+
+    fun showQr() {
+        val json = viewModel.exportSemesterJson()
+        if (json == null) {
+            qrTooBig = false
+            return
+        }
+        val payload = SemesterQrCodec.encode(json)
+        if (payload == null) {
+            qrTooBig = true
+        } else {
+            qrTooBig = false
+            qrPayload = payload
+        }
     }
 
     Scaffold(
@@ -183,6 +211,15 @@ fun ManageSchedulesScreen(
                     }
 
                     OutlinedButton(
+                        onClick = { showQr() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.QrCode2, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Передать по QR")
+                    }
+
+                    OutlinedButton(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -200,6 +237,15 @@ fun ManageSchedulesScreen(
                 Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Импортировать из файла")
+            }
+
+            OutlinedButton(
+                onClick = { showQrImport = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Получить по QR")
             }
             importError?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -237,5 +283,132 @@ fun ManageSchedulesScreen(
                 TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
             }
         )
+    }
+
+    // QR-передача: код семестра на весь экран — наведите камеру другого
+    // устройства или отсканируйте из веб-конфигуратора.
+    if (qrPayload != null) {
+        QrShowDialog(
+            payload = qrPayload ?: "",
+            onDismiss = { qrPayload = null }
+        )
+    }
+
+    if (qrTooBig) {
+        AlertDialog(
+            onDismissRequest = { qrTooBig = false },
+            title = { Text("Семестр не влезает в QR") },
+            text = {
+                Text("Расписание слишком большое для одного QR-кода. Передайте его файлом или через веб-конфигуратор.")
+            },
+            confirmButton = {
+                TextButton(onClick = { qrTooBig = false }) { Text("Понятно") }
+            }
+        )
+    }
+
+    // QR-приём: вставка строки из системного QR-ридера (Камера/Пикер
+    // распознают QR и позволяют скопировать текст).
+    if (showQrImport) {
+        AlertDialog(
+            onDismissRequest = { showQrImport = false },
+            title = { Text("Получить по QR") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Отсканируйте QR камерой телефона (или стандартным сканером) и вставьте строку сюда — она начинается с USCH1:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = qrImportDraft,
+                        onValueChange = {
+                            qrImportDraft = it
+                            qrImportError = null
+                        },
+                        placeholder = { Text("USCH1:…") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                    qrImportError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val json = SemesterQrCodec.decode(qrImportDraft.trim())
+                    if (json == null) {
+                        qrImportError = "Не удалось прочитать код: проверьте, что строка скопирована целиком"
+                    } else {
+                        val error = viewModel.importSemesterJson(json)
+                        if (error == null) {
+                            showQrImport = false
+                            qrImportDraft = ""
+                            qrImportError = null
+                        } else {
+                            qrImportError = error
+                        }
+                    }
+                }) { Text("Импортировать") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQrImport = false }) { Text("Отмена") }
+            }
+        )
+    }
+}
+
+/** Полноэкранный показ QR-кода семестра. */
+@Composable
+private fun QrShowDialog(
+    payload: String,
+    onDismiss: () -> Unit
+) {
+    val matrix = remember(payload) { QrImageGenerator.generate(payload) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("QR-код расписания") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                if (matrix == null) {
+                    Text("Не удалось построить код")
+                } else {
+                    QrCanvas(matrix = matrix, modifier = Modifier.size(280.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        "Наведите камеру другого устройства с приложением или веб-конфигуратором",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Закрыть") }
+        }
+    )
+}
+
+/** Рисуем QR-матрицу Canvas'ом: белая подложка + тёмные модули. */
+@Composable
+private fun QrCanvas(matrix: QrMatrix, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        drawRect(androidx.compose.ui.graphics.Color.White)
+        val cell = size.width / matrix.width
+        val dark = androidx.compose.ui.graphics.Color.Black
+        for (y in 0 until matrix.height) {
+            for (x in 0 until matrix.width) {
+                if (matrix[x, y]) {
+                    drawRect(
+                        color = dark,
+                        topLeft = androidx.compose.ui.geometry.Offset(x * cell, y * cell),
+                        size = androidx.compose.ui.geometry.Size(cell, cell)
+                    )
+                }
+            }
+        }
     }
 }
