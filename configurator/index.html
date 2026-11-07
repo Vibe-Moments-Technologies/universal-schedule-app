@@ -276,13 +276,17 @@ footer { max-width: 920px; margin: 26px auto 0; padding: 0 clamp(16px, 4vw, 28px
 </main>
 
 <footer>
-  Всё собирается в этом браузере: данные не покидают устройство. Экспортированный JSON вставьте в приложении: «Другое» → «Моё расписание» → «Импортировать».
+  Всё собирается в этом браузере: данные не покидают устройство. Экспортированный JSON вставьте в приложении: «Другое» → «Моё расписание» → «Импортировать». Или перенесите QR-кодом.
 </footer>
 
 <div class="actions">
   <div class="actions-inner">
     <button class="btn" id="importBtn" type="button">Импорт</button>
+    <button class="btn" id="scanQrBtn" type="button">Скан QR</button>
     <button class="btn primary" id="exportBtn" type="button">Скачать JSON</button>
+  </div>
+  <div class="actions-inner" style="margin-top:8px">
+    <button class="btn" id="showQrBtn" type="button" style="width:100%">Показать QR-код</button>
   </div>
 </div>
 
@@ -348,6 +352,38 @@ footer { max-width: 920px; margin: 26px auto 0; padding: 0 clamp(16px, 4vw, 28px
 </div>
 
 <div id="toast" role="status"></div>
+
+<!-- QR: показ кода семестра -->
+<div id="qrShowBackdrop" class="hidden" role="dialog" aria-modal="true" aria-labelledby="qrShowTitle">
+  <div id="editor">
+    <h3 id="qrShowTitle">QR-код расписания</h3>
+    <div id="qrShowBox" style="display:grid;place-items:center;background:#fff;border-radius:12px;padding:12px;margin:10px 0">
+      <canvas id="qrShowCanvas" width="320" height="320" style="max-width:100%;height:auto"></canvas>
+    </div>
+    <p class="hint" id="qrShowHint" style="margin:0 0 6px">Наведите камеру телефона с приложением «Расписание», чтобы принять семестр.</p>
+    <div class="editor-actions">
+      <button class="btn" id="qrShowCopy" type="button">Скопировать строку</button>
+      <span class="spacer"></span>
+      <button class="btn primary" id="qrShowClose" type="button">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR: скан камерой -->
+<div id="qrScanBackdrop" class="hidden" role="dialog" aria-modal="true" aria-labelledby="qrScanTitle">
+  <div id="editor">
+    <h3 id="qrScanTitle">Скан QR-кода</h3>
+    <div id="qrScanVideoBox" style="position:relative;border-radius:12px;overflow:hidden;background:#000;margin:10px 0">
+      <video id="qrScanVideo" playsinline muted style="width:100%;display:block"></video>
+      <div id="qrScanOverlay" style="position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:20px"></div>
+    </div>
+    <p class="hint" style="margin:0 0 6px">Наведите камеру на QR-код с экрана другого устройства. Ничего не записывается — кадры обрабатываются в браузере.</p>
+    <div class="editor-actions">
+      <span class="spacer"></span>
+      <button class="btn primary" id="qrScanClose" type="button">Отмена</button>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -691,18 +727,9 @@ function validate() {
   return errors;
 }
 
-function doExport() {
-  const errors = validate();
-  const errBox = $("lessonError");
-  if (errors.length) {
-    errBox.textContent = errors.join(". ") + ".";
-    errBox.classList.remove("hidden");
-    toast("Исправьте ошибки");
-    document.getElementById("secSemester").scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
-  }
-  errBox.classList.add("hidden");
-  const config = {
+/** Компактная конфигурация семестра (для экспорта и QR). */
+function buildConfigJson() {
+  return {
     university: state.university.trim(),
     group: state.group.trim(),
     course: state.course,
@@ -730,7 +757,20 @@ function doExport() {
       id: t.id, displayName: t.displayName, colorHex: t.colorHex || undefined
     }))
   };
-  const payload = { format: "universal-schedule", formatVersion: 2, semester: config };
+}
+
+function doExport() {
+  const errors = validate();
+  const errBox = $("lessonError");
+  if (errors.length) {
+    errBox.textContent = errors.join(". ") + ".";
+    errBox.classList.remove("hidden");
+    toast("Исправьте ошибки");
+    document.getElementById("secSemester").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  errBox.classList.add("hidden");
+  const payload = { format: "universal-schedule", formatVersion: 2, semester: buildConfigJson() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -862,6 +902,218 @@ document.addEventListener("keydown", (ev) => {
 });
 // Первичная инициализация цвета свотча
 $("eSwatch").style.background = $("eColor").value;
+
+/* ── QR: кодек (совместим с приложением) ─────────────────── */
+const QR_PREFIX = "USCH1:";
+
+async function gzipBytes(bytes) {
+  const cs = new CompressionStream("gzip");
+  const stream = new Blob([bytes]).stream().pipeThrough(cs);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function gunzipBytes(bytes) {
+  const ds = new DecompressionStream("gzip");
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function base64UrlEncode(bytes) {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlDecode(text) {
+  const b64 = text.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
+  const bin = atob(b64 + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function encodeSemesterQr(json) {
+  const packed = await gzipBytes(new TextEncoder().encode(json));
+  const payload = QR_PREFIX + base64UrlEncode(packed);
+  return payload.length <= 2900 ? payload : null;
+}
+
+async function decodeSemesterQr(payload) {
+  try {
+    const body = payload.trim().replace(QR_PREFIX, "");
+    const packed = base64UrlDecode(body);
+    const raw = await gunzipBytes(packed);
+    return new TextDecoder().decode(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ── QR: показ кода (библиотека qrcode-generator с CDN) ──── */
+function renderQrCanvas(canvas, payload) {
+  // qrcode-generator: UMD-модуль qrcode (глобал), тип 0, коррекция L.
+  const qr = qrcode(0, "L");
+  qr.addData(payload, "Byte");
+  qr.make();
+  const count = qr.getModuleCount();
+  const scale = Math.max(2, Math.floor(320 / (count + 8)));
+  const offset = 4;
+  canvas.width = (count + 8) * scale;
+  canvas.height = (count + 8) * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#000000";
+  for (let y = 0; y < count; y++) {
+    for (let x = 0; x < count; x++) {
+      if (qr.isDark(y, x)) {
+        ctx.fillRect((x + offset) * scale, (y + offset) * scale, scale, scale);
+      }
+    }
+  }
+}
+
+let currentQrPayload = null;
+
+async function showQr() {
+  const errors = validate();
+  if (errors.length) {
+    $("lessonError").textContent = errors.join(". ") + ".";
+    $("lessonError").classList.remove("hidden");
+    document.getElementById("secSemester").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  const payload = await encodeSemesterQr(buildConfigJson());
+  if (!payload) {
+    toast("Семестр слишком большой для QR");
+    return;
+  }
+  currentQrPayload = payload;
+  renderQrCanvas($("qrShowCanvas"), payload);
+  $("qrShowBackdrop").classList.remove("hidden");
+}
+
+function closeQrShow() {
+  $("qrShowBackdrop").classList.add("hidden");
+  currentQrPayload = null;
+}
+
+$("showQrBtn").addEventListener("click", showQr);
+$("qrShowClose").addEventListener("click", closeQrShow);
+$("qrShowCopy").addEventListener("click", async () => {
+  if (!currentQrPayload) return;
+  try {
+    await navigator.clipboard.writeText(currentQrPayload);
+    toast("Строка скопирована");
+  } catch (e) {
+    toast("Не удалось скопировать");
+  }
+});
+$("qrShowBackdrop").addEventListener("click", (ev) => {
+  if (ev.target === $("qrShowBackdrop")) closeQrShow();
+});
+
+/* ── QR: скан камерой (jsQR с CDN) ───────────────────────── */
+let scanStream = null;
+let scanTimer = null;
+
+async function startScan() {
+  $("qrScanBackdrop").classList.remove("hidden");
+  $("qrScanOverlay").textContent = "Запрашиваем камеру…";
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+    const video = $("qrScanVideo");
+    video.srcObject = scanStream;
+    await video.play();
+    $("qrScanOverlay").textContent = "";
+    scanTimer = setInterval(scanFrame, 250);
+  } catch (e) {
+    $("qrScanOverlay").textContent =
+      "Камера недоступна: " + (e.message || "нет доступа") + ". Проверьте разрешения браузера.";
+  }
+}
+
+function scanFrame() {
+  const video = $("qrScanVideo");
+  if (!video.videoWidth) return;
+  const canvas = document.createElement("canvas");
+  const w = Math.min(video.videoWidth, 960);
+  const h = Math.round(video.videoHeight * (w / video.videoWidth));
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(video, 0, 0, w, h);
+  const img = ctx.getImageData(0, 0, w, h);
+  const code = jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
+  if (code && code.data) {
+    handleScannedPayload(code.data);
+  }
+}
+
+async function handleScannedPayload(payload) {
+  const json = await decodeSemesterQr(payload);
+  if (!json) {
+    toast("QR прочитан, но это не код расписания");
+    return;
+  }
+  stopScan();
+  importFromJsonText(json);
+}
+
+function importFromJsonText(json) {
+  try {
+    const data = JSON.parse(json);
+    const sem = data.semester || data;
+    if (!sem.startDate || !Array.isArray(sem.entries)) throw new Error("structure");
+    state = {
+      university: sem.university || "",
+      group: sem.group || "",
+      course: sem.course || 1,
+      semesterNumber: sem.semesterNumber || 1,
+      semesterTitle: sem.semesterTitle || "",
+      startDate: sem.startDate,
+      weeksCount: sem.weeksCount || 17,
+      bells: (sem.bells || []).map(b => ({ number: b.number, startTime: b.startTime, endTime: b.endTime })),
+      customTypes: (sem.customTypes || []).map(t => ({ id: t.id, displayName: t.displayName, colorHex: t.colorHex })),
+      entries: (sem.entries || []).map(e => ({
+        id: e.id, dayOfWeek: e.dayOfWeek, bellNumber: e.bellNumber, subject: e.subject,
+        lessonType: e.lessonType || "OTHER", customTypeId: e.customTypeId || null,
+        colorHex: e.colorHex || null, teacher: e.teacher || "", classroom: e.classroom || "",
+        subgroup: e.subgroup || "", parity: e.parity || "ALL",
+        firstWeek: e.firstWeek || 1, lastWeek: e.lastWeek || 0
+      }))
+    };
+    fillForm();
+    saveDraft();
+    renderAll();
+    toast("Расписание принято по QR");
+  } catch (e) {
+    toast("Не удалось разобрать данные");
+  }
+}
+
+function stopScan() {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  if (scanStream) {
+    scanStream.getTracks().forEach(t => t.stop());
+    scanStream = null;
+  }
+  $("qrScanVideo").srcObject = null;
+  $("qrScanBackdrop").classList.add("hidden");
+}
+
+$("scanQrBtn").addEventListener("click", startScan);
+$("qrScanClose").addEventListener("click", stopScan);
+$("qrScanBackdrop").addEventListener("click", (ev) => {
+  if (ev.target === $("qrScanBackdrop")) stopScan();
+});
 </script>
+
+<!-- QR-библиотеки с CDN: генерация и скан -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>
